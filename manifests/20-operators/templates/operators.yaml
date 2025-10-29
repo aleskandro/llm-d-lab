@@ -1,0 +1,42 @@
+{{- /* Render one OperatorGroup per unique namespace */ -}}
+{{- range $op := .Values.operators }}
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: {{ printf "%s-operatorgroup" $op.namespace }}
+  namespace: {{ $op.namespace }}
+spec:
+  {{- if $op.targetNamespace }}
+  targetNamespaces:
+    - {{ $op.targetNamespace }}
+  {{- end }}
+---
+{{- end }}
+
+{{- /* Render Subscriptions */ -}}
+{{- range $op := .Values.operators }}
+{{- $targetNs := default "openshift-operators" (default $op.targetNamespace $op.namespace) -}}
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ $op.operatorName }}
+  namespace: {{ $targetNs }}
+  {{- if $op.labels }}
+  labels:
+    {{- range $k, $v := $op.labels }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if $op.channel }}
+  channel: {{ $op.channel | quote }}
+  {{- end }}
+  installPlanApproval: {{ default "Automatic" $op.installPlanApproval | quote }}
+  name: {{ $op.operatorName | quote }}
+  source: {{ $op.source | quote }}
+  sourceNamespace: {{ default "openshift-marketplace" $op.sourceNamespace | quote }}
+  {{- if $op.startingCSV }}
+  startingCSV: {{ $op.startingCSV | quote }}
+  {{- end }}
+---
+{{- end }}

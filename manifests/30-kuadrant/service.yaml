@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: authorino-authorino-authorization
+  namespace: kuadrant-system
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: authorino-server-cert
+spec:
+  ports: # Just a placeholder to create the service and secret. The operator will override the ports.
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http-replace-me

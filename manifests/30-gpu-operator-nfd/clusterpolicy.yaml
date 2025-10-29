@@ -1,0 +1,48 @@
+apiVersion: nvidia.com/v1
+kind: ClusterPolicy
+metadata:
+  name: gpu-cluster-policy
+spec:
+  daemonsets:
+    rollingUpdate:
+      maxUnavailable: "1"
+    updateStrategy: RollingUpdate
+    # TODO: NOTE: REMEMBER: these tolerations come from 01-infra-ocp/templates/machinesets.yaml
+    tolerations:
+      - key: "benchmark.llm-d.ai/test-gpu-amd64"
+        operator: "Exists"
+        effect: "NoSchedule"
+  dcgm:
+    enabled: true
+  dcgmExporter:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  devicePlugin:
+    enabled: true
+  driver:
+    enabled: true
+    kernelModuleConfig:
+      name: kernel-module-params    # Reference the ConfigMap created above
+    rdma:
+      enabled: true                  # CRITICAL: Enable RDMA support
+      useHostMofed: false
+    upgradePolicy:
+      autoUpgrade: true
+  gdrcopy:
+    enabled: true
+  gfd:
+    enabled: true
+  migManager:
+    enabled: true
+  nodeStatusExporter:
+    enabled: true
+  operator:
+    defaultRuntime: crio
+    runtimeClass: nvidia
+    use_ocp_driver_toolkit: true
+  toolkit:
+    enabled: true
+    installDir: /usr/local/nvidia
+  vfioManager:
+    enabled: true

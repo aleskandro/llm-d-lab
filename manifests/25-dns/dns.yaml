@@ -1,0 +1,37 @@
+apiVersion: operator.openshift.io/v1
+kind: DNS
+metadata:
+  name: default
+spec:
+  cache:
+    negativeTTL: 0s
+    positiveTTL: 0s
+  logLevel: Normal
+  nodePlacement:
+    tolerations:
+    - effect: NoSchedule
+      key: benchmark.llm-d.ai/test-gpu-amd64
+      operator: Exists
+    - effect: NoSchedule
+      key: benchmark.llm-d.ai/test-gpu-arm64
+      operator: Exists
+    - effect: NoSchedule
+      key: benchmark.llm-d.ai/test-cpu-amd64
+      operator: Exists
+    - effect: NoSchedule
+      key: benchmark.llm-d.ai/test-cpu-arm64
+      operator: Exists
+    - effect: NoSchedule
+      key: benchmark.llm-d.ai/infra-amd64
+      operator: Exists
+    - effect: NoSchedule
+      key: benchmark.llm-d.ai/infra-arm64
+      operator: Exists
+  operatorLogLevel: Normal
+  upstreamResolvers:
+    policy: Sequential
+    protocolStrategy: ""
+    transportConfig: {}
+    upstreams:
+    - port: 53
+      type: SystemResolvConf

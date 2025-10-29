@@ -1,0 +1,24 @@
+{{- /* Additional CatalogSources from values */ -}}
+{{- range $idx, $cat := .Values.additionalCatalogSources }}
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: {{ $cat.name }}
+  namespace: {{ default "openshift-marketplace" $cat.namespace }}
+spec:
+  displayName: {{ default $cat.name $cat.displayName | quote }}
+  image: {{ $cat.image | quote }}
+  publisher: {{ default "Custom" $cat.publisher | quote }}
+  sourceType: {{ default "grpc" $cat.sourceType | quote }}
+  priority: {{ default -100 $cat.priority }}
+  updateStrategy:
+    registryPoll:
+      interval: {{ default "10m" $cat.pollInterval | quote }}
+  grpcPodConfig:
+    extractContent:
+      cacheDir: /tmp/cache
+      catalogDir: /configs
+    memoryTarget: 40Mi
+    securityContextConfig: restricted
+---
+{{- end }}

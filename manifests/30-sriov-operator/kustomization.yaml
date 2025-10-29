@@ -1,0 +1,7 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+resources:
+- ./sriovoperatorconfig.yaml
+- ./sriovnetworknodepolicy.yaml
+#- ./sriovnetwork.yaml
+# SriovNetwork is commented out as it is needed only in specific scenarios and in the experiment namespace.

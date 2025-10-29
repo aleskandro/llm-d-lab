@@ -1,0 +1,19 @@
+# TODO: move to the appropriate example directory once finalized
+
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: roce-p2
+  namespace: openshift-sriov-network-operator
+spec:
+  ipam: |-
+    {
+      "type": "whereabouts",
+      "range": "10.0.132.0/24"
+    }
+  logLevel: info
+  networkNamespace: 'llm-test'    # Adjust to your namespace
+  resourceName: p2rdma
+  spoofChk: "off"
+  trust: "on"
+  linkState: "enable"

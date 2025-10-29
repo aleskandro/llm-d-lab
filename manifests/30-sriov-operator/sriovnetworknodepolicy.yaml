@@ -1,0 +1,26 @@
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: sriov-p2-policy
+  namespace: openshift-sriov-network-operator
+spec:
+  deviceType: netdevice
+  isRdma: true
+  linkType: eth
+  mtu: 9000
+  nicSelector:
+    deviceID: 101d           # Adjust based on your hardware
+    rootDevices:
+      - 0000:5c:00.0         # Adjust based on your hardware
+      - 0000:5c:00.1         # Adjust based on your hardware
+    pfNames:
+      - p2                   # Adjust based on your hardware
+    vendor: 15b3             # Mellanox/NVIDIA vendor ID
+  nodeSelector:
+    feature.node.kubernetes.io/pci-15b3.present: 'true'
+    feature.node.kubernetes.io/pci-15b3.sriov.capable: 'true'
+    feature.node.kubernetes.io/rdma.available: 'true'
+    feature.node.kubernetes.io/rdma.capable: 'true'
+  numVfs: 8
+  priority: 98
+  resourceName: p2rdma

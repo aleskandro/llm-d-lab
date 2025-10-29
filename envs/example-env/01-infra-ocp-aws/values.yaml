@@ -1,0 +1,95 @@
+# Default values for machinesets.
+region: us-east-2
+zones: ["a", "b", "c"]
+clusterApiCluster: "REPLACE_ME"
+namespace: openshift-machine-api
+
+# AMI IDs can be found at https://github.com/openshift/installer/blob/release-4.20/data/data/coreos/rhcos.json
+amis: { arm64: "ami-0c59bfd7b7a7cc3e7", amd64: "ami-082a55a580d5538ed" }
+
+aws:
+  # Provider specifics for AWS MachineProviderConfig
+  credentialsSecretName: aws-cloud-credentials
+  userDataSecretName: worker-user-data
+  iamInstanceProfile: "{{ .Values.clusterApiCluster }}-worker-profile"
+  securityGroupNodeTag: "{{ .Values.clusterApiCluster }}-node"
+  securityGroupLbTag: "{{ .Values.clusterApiCluster }}-lb"
+  subnetNamePrefix: "{{ .Values.clusterApiCluster }}-subnet-private-"
+
+machinesets:
+- name: test-gpu
+  autoscaler: true
+  minReplicas: 0
+  maxReplicas: 3
+  replicas: 0
+  volumeSize: 256
+  instanceType: "g6e.12xlarge"
+  architecture: "amd64"
+  taints:
+    - key: benchmark.llm-d.ai/test-gpu-amd64
+      effect: NoSchedule
+  annotations:
+    capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
+    capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
+    capacity.cluster-autoscaler.kubernetes.io/gpu-count: "8"
+    capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
+  nodeLabels:
+    benchmark.llm-d.ai/test-gpu-amd64: "true"
+- name: test-cpu-amd64
+  autoscaler: true
+  minReplicas: 0
+  maxReplicas: 3
+  replicas: 0
+  volumeSize: 256
+  instanceType: "m8i-flex.xlarge"
+  architecture: "amd64"
+  taints:
+    - key: benchmark.llm-d.ai/test-cpu-amd64
+      effect: NoSchedule
+  annotations:
+    capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-cpu-amd64=true"
+  nodeLabels:
+    benchmark.llm-d.ai/test-cpu-amd64: "true"
+- name: test-cpu-arm64
+  autoscaler: true
+  minReplicas: 0
+  maxReplicas: 3
+  replicas: 0
+  volumeSize: 256
+  instanceType: "m8i-flex.xlarge"
+  architecture: "arm64"
+  taints:
+    - key: benchmark.llm-d.ai/test-cpu-arm64
+      effect: NoSchedule
+  annotations:
+    capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-cpu-arm64=true"
+  nodeLabels:
+    benchmark.llm-d.ai/test-cpu-arm64: "true"
+- name: infra-amd64
+  autoscaler: true
+  minReplicas: 0
+  maxReplicas: 3
+  replicas: 0
+  volumeSize: 256
+  instanceType: "t3a.2xlarge"
+  architecture: "amd64"
+  annotations:
+    capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/infra-amd64=true"
+  nodeLabels:
+    benchmark.llm-d.ai/infra-amd64: "true"
+- name: infra-arm64
+  autoscaler: true
+  minReplicas: 0
+  maxReplicas: 3
+  replicas: 0
+  volumeSize: 256
+  instanceType: "m7g.2xlarge"
+  architecture: "arm64"
+  annotations:
+    capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/infra-arm64=true"
+  nodeLabels:
+    benchmark.llm-d.ai/infra-arm64: "true"
+
+# Cluster autoscaler settings
+autoscaler:
+  enableScaleDown: true

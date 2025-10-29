@@ -1,0 +1,37 @@
+apiVersion: autoscaling.openshift.io/v1
+kind: ClusterAutoscaler
+metadata:
+  name: default
+spec:
+  scaleDown:
+    enabled: {{ .Values.autoscaler.enableScaleDown | default true }}
+    delayAfterAdd: 1800s # 30 minutes
+    unneededTime: 900s # 15 minutes
+  balanceSimilarNodeGroups: true
+  ignoreDaemonsetsUtilization: true
+  maxPodGracePeriod: 600
+  podPriorityThreshold: -10
+  logVerbosity: 1
+  # TODO: add resource limits
+---
+{{- if .Values.autoscaler.priorityExpander.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler-priority-expander
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: cluster-autoscaler-priority-expander
+    app.kubernetes.io/part-of: cluster-autoscaler
+  annotations:
+    # Ensure CA picks it up
+    cluster-autoscaler.kubernetes.io/priority-expander: "true"
+data:
+  priorities: |-
+    {{- range $priority, $types := .Values.autoscaler.priorityExpander.priorities }}
+    {{ $priority }}:
+    {{- range $types }}
+      - {{ . }}
+    {{- end }}
+    {{- end }}
+{{- end }}

@@ -1,0 +1,107 @@
+{{- $region := .Values.region -}}
+{{- $zones := .Values.zones -}}
+{{- $cluster := .Values.clusterApiCluster -}}
+
+{{- range $i, $machineset := .Values.machinesets }}
+  {{- range $j, $zone := $zones }}
+  {{- $name := printf "%s-%s-%s" $machineset.name $region $zone }}
+---
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+  name: {{ $name }}
+  labels:
+    machine.openshift.io/cluster-api-cluster: {{ $cluster }}
+  annotations:
+{{- $machineset.annotations | toYaml | nindent 8 }}
+spec:
+  replicas: {{ $machineset.replicas }}
+  selector:
+    matchLabels:
+      machine.openshift.io/cluster-api-cluster: {{ $cluster }}
+      machine.openshift.io/cluster-api-machineset: {{ $name }}
+  template:
+    metadata:
+      labels: 
+        machine.openshift.io/cluster-api-cluster: {{ $cluster }}
+        machine.openshift.io/cluster-api-machine-role: worker
+        machine.openshift.io/cluster-api-machine-type: worker
+        machine.openshift.io/cluster-api-machineset: {{ $name }}
+    spec:
+      metadata:
+        labels:
+          {{ $machineset.nodeLabels | toYaml | nindent 12 }}
+      taints:
+{{- $machineset.taints | toYaml | nindent 8 }}
+      providerSpec:
+{{- if $.Values.aws }}
+        value:
+          apiVersion: machine.openshift.io/v1beta1
+          kind: AWSMachineProviderConfig
+          userDataSecret:
+            name: {{ $.Values.aws.userDataSecretName }}
+          placement:
+            availabilityZone: {{ $region }}{{ $zone }}
+            region: {{ $region }}
+          credentialsSecret:
+            name: {{ $.Values.aws.credentialsSecretName }}
+          instanceType: {{ $machineset.instanceType }}
+          metadata:
+            creationTimestamp: null
+          blockDevices:
+            - ebs:
+                encrypted: true
+                iops: 0
+                kmsKey:
+                  arn: ''
+                volumeSize: {{ $machineset.volumeSize }}
+                volumeType: gp3
+          securityGroups:
+            - filters:
+                - name: 'tag:Name'
+                  values:
+                    - {{ $cluster }}-node
+            - filters:
+                - name: 'tag:Name'
+                  values:
+                    - {{ $cluster }}-lb
+          metadataServiceOptions: {}
+          tags:
+            - name: kubernetes.io/cluster/{{ $cluster }}
+              value: owned
+          deviceIndex: 0
+          ami:
+            id: {{ index $.Values.amis $machineset.architecture | default "" }}
+          subnet:
+            filters:
+              - name: 'tag:Name'
+                values:
+                  - {{ $cluster }}-subnet-private-{{ $region }}{{ $zone }}
+          iamInstanceProfile:
+            id: {{ $cluster }}-worker-profile
+{{- else if $.Values.ibmCloud }}
+        value:
+          apiVersion: ibmcloudproviderconfig.openshift.io/v1beta1
+          bootVolume:
+            encryptionKey: ""
+          credentialsSecret:
+            name: ibmcloud-credentials
+          image: {{ $cluster }}-rhcos
+          kind: IBMCloudMachineProviderSpec
+          metadata:
+            creationTimestamp: null
+          primaryNetworkInterface:
+            securityGroups:
+            - {{ $cluster }}-sg-cluster-wide
+            - {{ $cluster }}-sg-openshift-net
+            subnet: {{ $cluster }}-subnet-compute-{{ $region }}-{{ $zone }}
+          profile: {{ $machineset.instanceType }}
+          region: {{ $region }}
+          resourceGroup: {{ $.Values.ibmCloud.resourceGroup | default "Default" }}
+          userDataSecret:
+            name: worker-user-data
+          vpc: {{ $cluster }}-vpc
+          zone: {{ $region }}-{{ $zone }}
+{{ end -}}
+{{- end -}}
+{{- end -}}

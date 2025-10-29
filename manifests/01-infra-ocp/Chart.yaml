@@ -1,0 +1,6 @@
+apiVersion: v2
+name: machinesets
+description: OCP MachineSets, MachineAutoscalers, and ClusterAutoscaler
+version: 0.1.0
+type: application
+appVersion: "1.0"

@@ -1,0 +1,103 @@
+{{ $ns := .Release.Namespace }}
+{{ $revision := .Release.Revision }}
+{{ $rname := "infra" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: llmd-ocp-infra-console-plugin-patcher-{{ $rname }}
+  namespace: {{ $ns }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: llmd-ocp-infra-console-plugin-patcher-{{ $rname }}
+rules:
+  - apiGroups: ["operator.openshift.io"]
+    resources: ["consoles"]
+    verbs: ["get","patch","update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: llmd-ocp-infra-console-plugin-patcher-{{ $rname }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: llmd-ocp-infra-console-plugin-patcher-{{ $rname }}
+subjects:
+  - kind: ServiceAccount
+    name: llmd-ocp-infra-console-plugin-patcher-{{ $rname }}
+    namespace: {{ $ns }}
+---
+{{- $cliImage := .Values.cliImage }}
+{{ range $op := .Values.operators }}
+{{ if $op.consolePlugins }}
+{{ range $cp := $op.consolePlugins }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $cp.name }}-plugin-enable-{{ $rname }}-{{ $revision }}
+  namespace: {{ $ns }}
+spec:
+  template:
+    spec:
+      serviceAccountName: llmd-ocp-infra-console-plugin-patcher-{{ $rname }}
+      restartPolicy: Never
+      containers:
+        - name: patch
+          image: {{ $cliImage }}
+          command: ["/bin/bash","-ceu"]
+          args:
+            - |
+              set -o pipefail
+              plugin="{{ $cp.name }}"
+
+              # Ensure Console CR exists
+              oc get console.operator cluster -o name
+
+              # If spec.plugins is missing, create it as an empty array
+              if ! oc get console.operator cluster -o jsonpath='{.spec.plugins}' 2>/dev/null | grep -q .; then
+                oc patch console.operator cluster --type=json \
+                  -p='[{"op":"add","path":"/spec/plugins","value":[]}]'
+              fi
+
+              # Append the plugin if not present
+              if ! oc get console.operator cluster -o jsonpath='{.spec.plugins[*]}' | tr ' ' '\n' | grep -qx "$plugin"; then
+                for i in {1..10}; do
+                    oc patch console.operator cluster --type=json \
+                      -p="[ { \"op\": \"add\", \"path\": \"/spec/plugins/-\", \"value\": \"${plugin}\" } ]" && break
+                    sleep 10
+                done
+                echo "Added plugin ${plugin} to Console spec.plugins"
+              else
+                echo "Plugin ${plugin} already present; nothing to do."
+              fi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $cp.name }}-plugin-disable-{{ $rname }}-{{ $revision }}
+  namespace: {{ $ns }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      serviceAccountName: llmd-ocp-infra-console-plugin-patcher-{{ $rname }}
+      restartPolicy: Never
+      containers:
+        - name: patch
+          image: {{ $cliImage }}
+          command: ["/bin/bash","-ceu"]
+          args:
+            - |
+              set -o pipefail
+              plugin="{{ $cp.name }}"
+              oc patch console.operator cluster --type=json \
+                -p="[ { \"op\": \"remove\", \"path\": \"/spec/plugins/-\", \"value\": \"${plugin}\" } ]"
+              echo "Removed plugin ${plugin} from Console spec.plugins"
+---
+{{- end }}
+{{- end }}
+{{- end }}

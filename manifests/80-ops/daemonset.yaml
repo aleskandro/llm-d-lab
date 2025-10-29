@@ -1,0 +1,75 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: bastion-daemon
+  namespace: debugging
+spec:
+  selector:
+    matchLabels:
+      app: bastion-daemon
+  template:
+    metadata:
+      labels:
+        app: bastion-daemon
+        openshift.io/scc: privileged
+    spec:
+      serviceAccountName: bastion-daemon
+      hostIPC: true
+      hostNetwork: true
+      hostPID: true
+      priorityClassName: openshift-user-critical
+      restartPolicy: OnFailure
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+        runAsNonRoot: false
+      containers:
+        - name: httpd
+          image: quay.io/aleskandrox/aitools:latest
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            privileged: true
+          command:
+          - /bin/bash
+          args:
+          - -c
+          - sleep infinity
+          volumeMounts:
+            - name: ssh-key
+              mountPath: /root/.ssh
+              readOnly: true
+            - name: host
+              mountPath: /host
+      volumes:
+        - name: ssh-key
+          secret:
+            secretName: ssh-key
+            optional: true
+        - name: host
+          hostPath:
+            path: /
+            type: Directory
+      tolerations:
+        - key: "node-role.kubernetes.io/infra"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/worker"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/master"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "benchmark.llm-d.ai/test-gpu-amd64"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "benchmark.llm-d.ai/test-cpu-amd64"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "benchmark.llm-d.ai/infra-amd64"
+          operator: "Exists"
+          effect: "NoSchedule"
