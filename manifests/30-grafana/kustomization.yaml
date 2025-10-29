@@ -1,0 +1,15 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+namespace: grafana
+resources:
+  - ./namespace.yaml
+  - ./rbac.yaml
+  - ./secret.yaml
+  - ./grafana.yaml
+  - ./datasource.yaml
+  - ./dashboard-vllm.yaml
+  - ./dashboard-nvidia.yaml
+  - ./route.yaml
+  #- ./dashboard-node-exporter.yaml
+  #- ./dashboard-cluster-monitoring.yaml
+  # TODO: ^

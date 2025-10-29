@@ -1,0 +1,57 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: grafana
+  name: grafana-role
+rules:
+- apiGroups: ["metrics.k8s.io", "custom.metrics.k8s.io", "external.metrics.k8s.io", "monitoring.coreos.com"]
+  resources:
+  - "*"
+  verbs: ["get", "list", "watch"]
+- apiGroups:
+    - monitoring.coreos.com
+  resources:
+    - prometheuses/api
+  verbs:
+    - get
+    - create
+    - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: grafana-rolebinding
+  namespace: grafana
+subjects:
+- kind: ServiceAccount
+  name: grafana-sa
+  namespace: grafana
+roleRef:
+  kind: ClusterRole
+  name: grafana-role
+  apiGroup: rbac.authorization.k8s.io
+# Note: the service account is created by the grafana operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: grafana-clusterrolebinding
+roleRef:
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: grafana-sa
+    namespace: grafana
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+    name: grafana-metrics-reader
+roleRef:
+    kind: ClusterRole
+    name: metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: grafana-sa
+    namespace: grafana
