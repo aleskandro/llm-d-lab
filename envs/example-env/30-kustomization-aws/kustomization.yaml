@@ -1,0 +1,39 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+resources:
+- ../30-kustomization-aux
+- 99-secret-loki.yaml
+- 99-grafana-credentials-secret.yaml
+- 99-hftoken-secret.yaml
+- 99-secret-ssh-key.yaml
+
+patches:
+  - target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: Gateway
+      name: openshift-ai-inference
+      namespace: openshift-ingress
+    patch: |-
+      - op: replace
+        path: /spec/listeners/0/hostname
+        value: "*.gwapi.apps.aleskandro-01.psap.aws.rhperfscale.org"
+  - target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: Gateway
+      name: infra-gateway
+      namespace: openshift-ingress
+    patch: |-
+      - op: replace
+        path: /spec/listeners/0/hostname
+        value: "*.infra.apps.aleskandro-01.psap.aws.rhperfscale.org"
+  - target:
+      group: loki.grafana.com
+      version: v1
+      kind: LokiStack
+      name: netobserv-loki
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: gp3-csi

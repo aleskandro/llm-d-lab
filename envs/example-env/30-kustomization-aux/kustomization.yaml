@@ -1,0 +1,19 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+resources:
+  - ../../../manifests/25-descheduler
+  - ../../../manifests/25-dns
+  - ../../../manifests/25-multiarch-tuning-operator
+  - ../../../manifests/27-gitops
+  - ../../../manifests/30-cert-manager
+  - ../../../manifests/30-gpu-operator-nfd
+  - ../../../manifests/30-grafana
+  - ../../../manifests/30-kuadrant
+  - ../../../manifests/30-lws
+  - ../../../manifests/30-netobserv
+  - ../../../manifests/30-sriov-operator
+  - ../../../manifests/30-user-monitoring
+  - ../../../manifests/40-gateway-api
+  - ../../../manifests/60-llm-d-rhoai-pre
+  - ../../../manifests/60-llm-d-upstream-pre
+  - ../../../manifests/80-ops
