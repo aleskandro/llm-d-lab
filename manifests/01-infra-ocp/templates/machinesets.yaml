@@ -10,6 +10,7 @@ apiVersion: machine.openshift.io/v1beta1
 kind: MachineSet
 metadata:
   name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
   labels:
     machine.openshift.io/cluster-api-cluster: {{ $cluster }}
   annotations:
