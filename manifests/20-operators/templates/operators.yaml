@@ -19,7 +19,7 @@ spec:
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: {{ $op.operatorName }}
+  name: {{ $op.name }}
   namespace: {{ $targetNs }}
   {{- if $op.labels }}
   labels:
@@ -32,7 +32,7 @@ spec:
   channel: {{ $op.channel | quote }}
   {{- end }}
   installPlanApproval: {{ default "Automatic" $op.installPlanApproval | quote }}
-  name: {{ $op.operatorName | quote }}
+  name: {{ $op.name | quote }}
   source: {{ $op.source | quote }}
   sourceNamespace: {{ default "openshift-marketplace" $op.sourceNamespace | quote }}
   {{- if $op.startingCSV }}

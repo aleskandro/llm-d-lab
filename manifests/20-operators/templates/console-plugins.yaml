@@ -1,6 +1,6 @@
 {{ $ns := .Release.Namespace }}
 {{ $revision := .Release.Revision }}
-{{ $rname := "infra" }}
+{{ $rname := .Release.Name }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -36,7 +36,7 @@ subjects:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ $cp.name }}-plugin-enable-{{ $rname }}-{{ $revision }}
+  name: {{ $cp }}-enable-{{ $rname }}-{{ $revision }}
   namespace: {{ $ns }}
 spec:
   template:
@@ -50,7 +50,7 @@ spec:
           args:
             - |
               set -o pipefail
-              plugin="{{ $cp.name }}"
+              plugin="{{ $cp }}"
 
               # Ensure Console CR exists
               oc get console.operator cluster -o name
@@ -76,7 +76,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ $cp.name }}-plugin-disable-{{ $rname }}-{{ $revision }}
+  name: {{ $cp }}-disable-{{ $rname }}-{{ $revision }}
   namespace: {{ $ns }}
   annotations:
     "helm.sh/hook": pre-delete
@@ -92,10 +92,9 @@ spec:
           command: ["/bin/bash","-ceu"]
           args:
             - |
-              set -o pipefail
-              plugin="{{ $cp.name }}"
+              plugin="{{ $cp }}"
               oc patch console.operator cluster --type=json \
-                -p="[ { \"op\": \"remove\", \"path\": \"/spec/plugins/-\", \"value\": \"${plugin}\" } ]"
+                -p="[ { \"op\": \"remove\", \"path\": \"/spec/plugins/-\", \"value\": \"${plugin}\" } ]" || echo "error"
               echo "Removed plugin ${plugin} from Console spec.plugins"
 ---
 {{- end }}
