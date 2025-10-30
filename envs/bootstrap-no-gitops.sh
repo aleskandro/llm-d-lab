@@ -26,6 +26,8 @@ oc get namespace $NAMESPACE || oc create namespace "$NAMESPACE"
 echo "Applying Helm charts..."
 
 for chart in "01-infra-ocp-${CLOUD_PROVIDER}" 20-operators; do
+  echo
+  echo "Working on chart: $chart"
   if [ ! -d "$ENV_DIR/$chart" ]; then
     echo "Error: Environment directory '$ENV_DIR/$chart' does not exist."
     exit 1
@@ -34,28 +36,24 @@ for chart in "01-infra-ocp-${CLOUD_PROVIDER}" 20-operators; do
     echo "Applying Helm chart '$chart' with values file '$value_file'"
     base=$(basename "$value_file")
     release_name=${base%values.yaml}
-    helm upgrade --install "h-${chart}-${release_name}" "$MANIFESTS_DIR/$chart/" \
+    release_name=${release_name:-def}
+    helm upgrade --install "h-${chart}-${release_name%-}" "$MANIFESTS_DIR/${chart%-"$CLOUD_PROVIDER"}/" \
       --namespace $NAMESPACE \
       --values "$value_file"
-    pause
   done
 done
 
 echo "Applying Kustomization projects..."
-
-find "$MANIFESTS_DIR" -type  f -name kustomization.yaml -exec dirname {} \; | sort | while IFS= read -r -d '' kustomization; do
-  echo
-  echo "Applying kustomization project '$kustomization'"
-  for i in 1..60 MAX; do
-    if [ "$i" == "MAX" ]; then
-      echo "Error: Max retries reached for kustomization project '$kustomization'"
-      exit 1
-    fi
-    echo "Attempt $i to apply kustomization..."
-    if oc apply -k "$kustomization"; then
-      break
-    fi
-    echo "Waiting for CRDs required by the kustomization to be created before retrying..."
-    sleep 30
-  done
+for i in $(seq 1 60) MAX; do
+  if [ "$i" == "MAX" ]; then
+    echo "Error: Max retries reached for kustomization project"
+    exit 1
+  fi
+  echo "Attempt $i to apply kustomization..."
+  if oc apply -k "$ENV_DIR/30-kustomization"; then
+    break
+  fi
+  echo "Waiting for CRDs required by the kustomization to be created before retrying..."
+  sleep 30
 done
+set +x
