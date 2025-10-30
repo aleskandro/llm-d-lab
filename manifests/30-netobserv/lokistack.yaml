@@ -1,0 +1,19 @@
+kind: LokiStack
+apiVersion: loki.grafana.com/v1
+metadata:
+  name: netobserv-loki
+  namespace: netobserv
+spec:
+  size: 1x.small
+  storage:
+    secret:
+      name: loki-s3
+      type: s3
+  storageClassName: gp3-csi
+  # NOTE: storageClassName is a mandatory field and it must match an existing StorageClass in the cluster.
+  # Patch it in the kustomization.yaml if needed, as in the env folder's example.
+  tenants:
+    mode: openshift-network
+    openshift:
+      adminGroups:
+      - cluster-admin
