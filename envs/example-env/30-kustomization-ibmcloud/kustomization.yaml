@@ -2,10 +2,10 @@ kind: Kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 resources:
 - ../30-kustomization-aux
-- 99-secret-loki.yaml
+- 99-loki-secret.yaml
 - 99-grafana-credentials-secret.yaml
 - 99-hftoken-secret.yaml
-- 99-secret-ssh-key.yaml
+- 99-ssh-key-secret.yaml
 
 patches:
   - target:
