@@ -50,7 +50,7 @@ for i in $(seq 1 60) MAX; do
     exit 1
   fi
   echo "Attempt $i to apply kustomization..."
-  if oc apply -k "$ENV_DIR/30-kustomization"; then
+  if oc apply -k "$ENV_DIR/30-kustomization-$CLOUD_PROVIDER"; then
     break
   fi
   echo "Waiting for CRDs required by the kustomization to be created before retrying..."
