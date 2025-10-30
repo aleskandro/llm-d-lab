@@ -1,10 +1,6 @@
 #!/bin/bash
-set +x
-set -e
 
-pause() {
-  read -r -p "Press Enter to continue..."
-}
+set -euo pipefail
 
 usage() {
   echo "Usage: $0 <environment> <cloud-provider>"
@@ -56,4 +52,3 @@ for i in $(seq 1 60) MAX; do
   echo "Waiting for CRDs required by the kustomization to be created before retrying..."
   sleep 30
 done
-set +x
