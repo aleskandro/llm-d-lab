@@ -1,133 +1,131 @@
-## LLM-D Benchmarking Lab
+# 🚀 LLM-D Benchmarking Lab
 
-Accelerate reproducible inference experiments for large language models with [LLM-D](https://github.com/llm-d). This lab automates the provisioning of a complete evaluation environment on OpenShift/OKD: GPU worker pools, core operators, observability, traffic control, and ready-to-run example workloads. Bring your model configs and focus on research and performance engineering—not on cluster plumbing.
+Accelerate reproducible inference experiments for large language models with [LLM-D](https://github.com/llm-d)! This lab automates the setup of a complete evaluation environment on OpenShift/OKD: GPU worker pools, core operators, observability, traffic control, and ready-to-run example workloads. 
 
-Note: this is an experimental, evolving project. Breaking changes may occur.
+> ⚠️ **Experimental Project:** This is a Work in progress repository. Breaking changes may occur.
 
-<img src="docs/diagram.svg" alt="Diagram of the architecture" width="800"/>
+<img src="docs/diagram.svg" alt="Architecture Diagram" width="800"/>
 
-## Who is this for?
-- Researchers validating distributed inference engines and orchestration strategies
-- Performance engineers running experiments on LLM-D and Openshift AI
-- Platform engineers and SREs building reliable LLM serving at scale
-- Solution architects prototyping LLM-backed solutions on Kubernetes/OpenShift
+---
 
-## Key capabilities
-- Support for AWS and IBM Cloud
-- Automated infrastructure:
-  - MachineSets per zone/arch and per-pool autoscaling
-  - ClusterAutoscaler with optional priority expander
-- Operators and platform services (installed via OLM/Helm/Kustomize):
-  - NVIDIA GPU Operator + Node Feature Discovery
-  - Descheduler (Compact-and-Scale friendly)
-  - Custom Metrics Autoscaler (KEDA)
-  - Gateway API, Kuadrant, Authorino, cert-manager
-  - Optional SR-IOV (for advanced networking scenarios)
-  - User workload monitoring enabled
-  - NetObserv + LokiStack
-  - Grafana with curated dashboards (cluster, NVIDIA, node-exporter, vLLM) - WIP
-  - KubeView and Open WebUI (optional convenience UIs)
-- LLM-D upstream and Red Hat OpenShift AI downstream paths
-- Example manifests for KServe LLMInferenceService (RHOAI) and KV-cache routing
-- Example scenarios for precise-prefix cache-aware experiments
-- [WIP] GitOps App-of-Apps via Argo CD
+## 👤 Who is this for?
+- 🛠️ Performance engineers running LLM-D & OpenShift AI experiments
+- 🏗️ Platform engineers & SREs building scalable LLM serving
+- 🧩 Solution architects prototyping LLM-backed solutions
+- 🧑‍🔬 Researchers validating distributed inference engines and orchestration strategies
 
-## Cluster prerequisites
-- OpenShift 4.20+ (OKD should work; enable `redhat-operators` and `certified-operators` catalogs)
+---
+
+## ✨ Key Capabilities
+- ☁️ AWS & IBM Cloud support
+- ⚡ Automated infrastructure: MachineSets, autoscaling, ClusterAutoscaler
+- 🧩 Operators & platform services: NVIDIA GPU Operator, Node Feature Discovery, Descheduler, KEDA, Gateway API, Kuadrant, Authorino, cert-manager
+- 🕵️ Observability: NetObserv, LokiStack, Grafana dashboards (WIP)
+- 🔬 Example manifests for KServe LLMInferenceService & KV-cache routing
+- 🧪 Precise-prefix cache-aware experiments
+- 🔄 GitOps App-of-Apps via Argo CD (WIP)
+
+---
+
+## 🛠️ Cluster Prerequisites
+- OpenShift 4.20+ (OKD supported)
 - Cluster-admin permissions
-- Cloud credentials with permissions to manage compute nodes
-- GPU instance types available in your region
+- Cloud credentials for compute node management
+- GPU instance types available
 
-## Quickstart
-1. Fork this repo (recommended) if you plan to use GitOps later.
-2. Copy the example environment and edit values for your setup:
-   - Duplicate `envs/example-env` to a new directory (e.g., `envs/my-env`).
-   - Review and fill provider-specific values and toggles.
-3. Provide required secrets using `99-*secret.example.yaml` files as references:
-   - `manifests/60-llm-d-upstream-pre/99-secret.example.yaml`
-   - `manifests/90-llm-d-rhoai/99-secret.yaml`
-4. Deploy:
-```shell
-bash envs/bootstrap-no-gitops.sh $YOUR_ENV_NAME $YOUR_CLOUD_PROVIDER
-```
-5. Monitor progress until all components are healthy.
+---
 
-## What gets deployed
-- Infrastructure (cloud-specific):
-  - `MachineSet`, `MachineAutoscaler`, `ClusterAutoscaler` via `manifests/01-infra-ocp`
-- Core operators and platform add-ons (`manifests/20-operators`):
-  - GPU Operator, Node Feature Discovery
-  - Descheduler
-  - Custom Metrics Autoscaler (KEDA)
-  - CatalogSources, OperatorGroups, Subscriptions wiring
-- Networking and API Gateway (`manifests/40-gateway-api`, `manifests/30-kuadrant`):
-  - Gateway API, GatewayClasses and Gateways
-  - Kuadrant + Authorino for policy and auth
-  - cert-manager for certificates
-- Observability (`manifests/30-grafana`, `manifests/30-netobserv`):
-  - Grafana operator resources, Prometheus datasource, curated dashboards
-  - NetObserv and LokiStack
-  - User workload monitoring enabled
-- GPU and system tuning:
-  - NVIDIA GPU Operator + NFD (`manifests/30-gpu-operator-nfd`)
-  - Optional SR-IOV stack (`manifests/30-sriov-operator`)
-  - Descheduler policy (`manifests/25-descheduler`)
-- Optional UIs and utilities:
-  - KubeView with auth-layer (`manifests/80-kubeview`)
-  - Open WebUI reference (`manifests/80-open-webui`)
-- LLM-D upstream and RHOAI downstream scaffolding:
-  - Upstream pre-reqs and namespace (`manifests/60-llm-d-upstream-pre`)
-  - RHOAI pre-reqs and sample `LLMInferenceService` (`manifests/60-llm-d-rhoai-pre`, `manifests/90-llm-d-rhoai`)
-- Example experiments:
-  - Precise prefix cache-aware scenarios (`manifests/90-examples-llmd/precise-prefix-cache-aware`)
+## ⚡ Quickstart
 
-## Running example workloads
-- Red Hat OpenShift AI examples:
+1. **Fork/Clone** this repo (Fork is critical for GitOps).
+2. **Copy & edit environment:**
+   - Duplicate `envs/example-env` → `envs/my-env`
+   - Fill in provider-specific values.
+3. **Add secrets:** Duplicate the secrets examples from 99-(*).secret.example.yaml to 99-(*).secret.yaml and fill in your sensitive data.
+4. **Deploy:**
+   ```shell
+   pushd envs
+   bash bootstrap-no-gitops.sh $YOUR_ENV_NAME $YOUR_CLOUD_PROVIDER
+   popd
+   ```
+5. **Monitor** until all components are healthy.
+
+---
+
+## 📦 What Gets Deployed
+
+- **Infrastructure:**  
+  MachineSet, MachineAutoscaler, ClusterAutoscaler (`manifests/01-infra-ocp`)
+- **Core Operators:**  
+  GPU Operator, Node Feature Discovery, Descheduler, KEDA (`manifests/20-operators`)
+- **Networking & API Gateway:**  
+  Gateway API, Kuadrant, Authorino, cert-manager (`manifests/40-gateway-api`, `manifests/30-kuadrant`)
+- **Observability:**  
+  Grafana, NetObserv, LokiStack (`manifests/30-grafana`, `manifests/30-netobserv`)
+- **GPU & System Tuning:**  
+  NVIDIA GPU Operator, NFD, SR-IOV, Descheduler (`manifests/30-gpu-operator-nfd`, `manifests/30-sriov-operator`, `manifests/25-descheduler`)
+- **Optional UIs:**  
+  KubeView, Open WebUI (`manifests/80-kubeview`, `manifests/80-open-webui`)
+- **LLM-D & RHOAI Scaffolding:**  
+  Upstream & downstream pre-reqs, sample workloads (`manifests/60-llm-d-upstream-pre`, `manifests/60-llm-d-rhoai-pre`, `manifests/90-llm-d-rhoai`)
+
+---
+
+## 🏃 Running Example Workloads
+
+- **OpenShift AI Examples:**
   - `manifests/90-llm-d-rhoai/llm-inference-service-qwen2-7b-gpu.yaml`
-  - `manifests/90-llm-d-rhoai/llm-inference-service-kv-cache-routing.yaml` (includes KV-cache metrics knobs)
-- LLM-D experiments:
+  - `manifests/90-llm-d-rhoai/llm-inference-service-kv-cache-routing.yaml`
+- **LLM-D Experiments:**
   - `manifests/90-examples-llmd/precise-prefix-cache-aware/*`
 
-After deployment, you can use helper scripts in `hack/` (for example, `hack/curl-model.sh`) to validate endpoints.
+Use helper scripts in `hack/` (e.g., `hack/curl-model.sh`) to validate endpoints.
 
-## Observability
-- Grafana namespace `grafana` with dashboards for:
-  - Cluster monitoring, NVIDIA GPU, node-exporter, vLLM
-- NetObserv + LokiStack for network flows and logs
-- Prometheus user workload monitoring enabled for custom metrics
+---
 
-## Networking and access
-- Gateway API exposes traffic through `GatewayClass` and `Gateway` resources
-- Kuadrant + Authorino for policy management and authn/z
-- cert-manager provisions certificates for routes
+## 📊 Observability
 
-## GitOps (optional)
-The repo includes GitOps scaffolding under `manifests/27-gitops` to bootstrap an App-of-Apps approach with Argo CD. For now, the primary path is the non-GitOps bootstrap script; GitOps is planned for future iterations.
+- **Grafana** (`grafana` namespace): Cluster, NVIDIA GPU, node-exporter, vLLM dashboards
+- **NetObserv + LokiStack:** Network flows & logs
+- **Prometheus:** User workload monitoring for custom metrics
 
-# LLM-D paths
+---
 
-LLM-D paths are not automated here as the project is in a too early stage and evolving rapidly.
+## 🌐 Networking & Access
 
-## Open Data Hub/RHOAI
+- **Gateway API:** Traffic via GatewayClass & Gateway resources
+- **Kuadrant + Authorino:** Policy management & authentication
+- **cert-manager:** Certificate provisioning
 
-Most of the supporting objects (GatewayClass, Gateway, Open Data Science Resources...) are provided under `manifests/60-llm-d-rhoai-pre` and you will need to deploy your LLMInferenceService object and any other scenario-specific object.
+---
 
-Some examples will be provided here soon. Examples of LLMInferenceService objects can be found in the  [kserve repo (release-0.15)](https://github.com/opendatahub-io/kserve/tree/release-v0.15/docs/samples/llmisvc).
+## 🔄 GitOps (Optional)
 
-## Upstream LLM-D
-You won't need to deploy any dependencies provided in the Helmfile projects in the [guides](https://github.com/llm-d/llm-d/tree/main/guides).
+GitOps scaffolding is available under `manifests/27-gitops` for App-of-Apps bootstrapping with Argo CD.  
+Primary path is non-GitOps bootstrap; GitOps is planned for future releases.
 
-Upstream LLM-D deploys the Gateway API, GAIE, and a provider (Istio, KGateway, ...) via the [prereq](https://github.com/llm-d/llm-d/tree/d87d637a41911ca81dbdf1590b7d3a02274f9bf3/guides/prereq/gateway-provider) scripts and Helm charts.
+---
 
-When users choose Istio, Istio is deployed as the controller for the GatewayClass, usually in the same namespace where the inference workloads are created.
+## 🛤️ LLM-D Paths
 
-Isio is the upstream for Red Hat OpenShift ServiceMesh 3.0. When installing the upstream distribution in an OCP cluster that already runs Red Hat OpenShift ServiceMesh 3.0, be sure to skip [this](https://github.com/llm-d/llm-d/blob/d87d637a41911ca81dbdf1590b7d3a02274f9bf3/guides/prereq/gateway-provider/istio.helmfile.yaml#L2-L9) chart and remove the [dependency](https://github.com/llm-d/llm-d/blob/d87d637a41911ca81dbdf1590b7d3a02274f9bf3/guides/prereq/gateway-provider/istio.helmfile.yaml#L16-L17) in the second one.
+LLM-D paths are not automated yet due to rapid project evolution.
 
-LLM-D on RHOAI/ODH relies on the Gateway API using the deployment istiod-openshift-gateway in the namespace openshift-ingress-controller, managed by OSSM3's IstioRevision openshift-gateway.
+### Open Data Hub / RHOAI
 
-The Gateway API (and extensions) installed upstream via install-gateway-provider-dependencies are slightly different in the API group, for example:
+Supporting objects (GatewayClass, Gateway, Open Data Science Resources) are in `manifests/60-llm-d-rhoai-pre`.  
+Deploy your `LLMInferenceService` and scenario-specific objects.  
+See [kserve repo (release-0.15)](https://github.com/opendatahub-io/kserve/tree/release-v0.15/docs/samples/llmisvc) for examples.
 
-(inferencepools|...).inference.networking.k8s.io <- used by the downstream
-(inferencepools|...).inference.networking.x-k8s.io <- used by the upstream helm apps
+### Upstream LLM-D
 
-An example Helmfile will be provided soon for defining your own paths in a cluster running this infrastructure.
+Upstream LLM-D deploys Gateway API, GAIE, and a gateway controller (Istio, KGateway, ...) via [prereq scripts](https://github.com/llm-d/llm-d/tree/d87d637a41911ca81dbdf1590b7d3a02274f9bf3/guides/prereq/gateway-provider) and Helm charts.
+
+- If using Istio, deploy as GatewayClass controller in the inference namespace.
+- For OCP clusters with Red Hat OpenShift ServiceMesh 3.0, skip [this chart](https://github.com/llm-d/llm-d/blob/d87d637a41911ca81dbdf1590b7d3a02274f9bf3/guides/prereq/gateway-provider/istio.helmfile.yaml#L2-L9) and remove [this dependency](https://github.com/llm-d/llm-d/blob/d87d637a41911ca81dbdf1590b7d3a02274f9bf3/guides/prereq/gateway-provider/istio.helmfile.yaml#L16-L17).
+
+API group differences:
+- Downstream: `(inferencepools|...).inference.networking.k8s.io`
+- Upstream: `(inferencepools|...).inference.networking.x-k8s.io`
+
+Example Helmfile coming soon!
+
