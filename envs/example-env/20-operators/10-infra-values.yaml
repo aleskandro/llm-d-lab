@@ -29,7 +29,7 @@ operators:
     source: redhat-operators
     sourceNamespace: openshift-marketplace
   - channel: stable
-    name: openshift-nfd # nfd
+    name: nfd
     namespace: openshift-nfd
     source: redhat-operators-4-19
     sourceNamespace: openshift-marketplace

@@ -3,7 +3,7 @@ namespace: openshift-marketplace
 additionalCatalogSources:
   - name: rhoai-3-0
     namespace: openshift-marketplace
-    image: quay.io/rhoai/rhoai-fbc-fragment:ocp-4.19-rhoai-3.0-71e00ea62fe04eaa2479e771b1dd1bca942b609a
+    image: REPLACE_ME
     displayName: Openshift AI 3.0
     publisher: Red Hat
 
