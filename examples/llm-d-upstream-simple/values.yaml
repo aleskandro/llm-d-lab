@@ -1,0 +1,15 @@
+tolerations: &tolerations
+  - effect: NoSchedule
+    key: benchmark.llm-d.ai/test-gpu-amd64
+    operator: Exists
+
+modelService:
+  modelArtifacts:
+    uri: "hf://meta-llama/Llama-3.1-8B"
+    size: 64Gi
+    authSecretName: "llm-d-hf-token"
+    name: "meta-llama/Llama-3.1-8B"
+  decode:
+    tolerations: *tolerations
+  prefill:
+    tolerations: *tolerations
