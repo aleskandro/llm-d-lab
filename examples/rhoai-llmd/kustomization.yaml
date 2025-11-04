@@ -1,0 +1,5 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+
+resources:
+  - https://raw.githubusercontent.com/opendatahub-io/kserve/57e3509b6d/docs/samples/llmisvc/precise-prefix-kv-cache-routing/llm-inference-service-qwen2-7b-gpu-kv-cache-routing.yaml
