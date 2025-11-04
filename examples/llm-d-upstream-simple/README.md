@@ -11,3 +11,10 @@ helmfile -n experiment-01 apply -f $LLM_D_REPO_PATH/guides/inference-scheduling/
 ```
 
 NOTE: At the time of writing, this depends on https://github.com/llm-d/llm-d/pull/430.
+
+To also deploy the HTTPRoute, you can run:
+```shell
+oc apply -k .
+```
+
+You can change the HTTPRoute manifest to match your setup via kustomization patches.
