@@ -4,7 +4,8 @@ metadata:
   name: thanos
   namespace: grafana
 spec:
-  resyncPeriod: 1m
+  resyncPeriod: 10m
+  uid: prometheus
   valuesFrom:
     - targetPath: secureJsonData.httpHeaderValue1
       valueFrom:

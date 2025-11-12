@@ -7,9 +7,5 @@ resources:
   - ./secret.yaml
   - ./grafana.yaml
   - ./datasource.yaml
-  - ./dashboard-vllm.yaml
-  - ./dashboard-nvidia.yaml
   - ./route.yaml
-  #- ./dashboard-node-exporter.yaml
-  #- ./dashboard-cluster-monitoring.yaml
-  # TODO: ^
+  - ./dashboards
