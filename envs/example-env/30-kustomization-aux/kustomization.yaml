@@ -14,6 +14,7 @@ resources:
   - ../../../manifests/30-sriov-operator
   - ../../../manifests/30-user-monitoring
   - ../../../manifests/40-gateway-api
+  - ../../../manifests/50-pipelines
   - ../../../manifests/60-llm-d-rhoai-pre
   - ../../../manifests/60-llm-d-upstream-pre
   - ../../../manifests/80-ops

@@ -1,0 +1,119 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: custom-load-test-example
+  namespace: vllm-test
+spec:
+  params:
+    - name: target-url
+      type: string
+      default: "http://vllm:8000"
+    - name: model
+      type: string
+      default: "unsloth/Meta-Llama-3.1-8B"
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    # Example 1: Poisson arrival pattern with 10 req/s
+    - name: poisson-load-test
+      taskRef:
+        name: guidellm-load-generator
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: model
+          value: $(params.model)
+        - name: rate-type
+          value: poisson
+        - name: rate
+          value: "10"
+        - name: max-seconds
+          value: "300"
+        - name: prompt-tokens
+          value: "256"
+        - name: output-tokens
+          value: "512"
+        - name: output-basename
+          value: poisson-test
+      workspaces:
+        - name: results
+          workspace: shared-workspace
+
+    # Example 2: Constant rate 5 req/s
+    - name: constant-rate-test
+      taskRef:
+        name: guidellm-load-generator
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: model
+          value: $(params.model)
+        - name: rate-type
+          value: constant
+        - name: rate
+          value: "5"
+        - name: max-requests
+          value: "100"
+        - name: prompt-tokens
+          value: "128"
+        - name: output-tokens
+          value: "128"
+        - name: output-basename
+          value: constant-test
+      workspaces:
+        - name: results
+          workspace: shared-workspace
+      runAfter:
+        - poisson-load-test
+
+    # Example 3: Throughput test with custom concurrency
+    - name: high-throughput-test
+      taskRef:
+        name: guidellm-load-generator
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: model
+          value: $(params.model)
+        - name: rate-type
+          value: throughput
+        - name: max-concurrency
+          value: "128"
+        - name: max-seconds
+          value: "180"
+        - name: prompt-tokens
+          value: "64"
+        - name: output-tokens
+          value: "64"
+        - name: output-basename
+          value: high-throughput-test
+        - name: additional-args
+          value: "--warmup-duration 30"
+      workspaces:
+        - name: results
+          workspace: shared-workspace
+      runAfter:
+        - constant-rate-test
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: custom-load-test-run
+  namespace: vllm-test
+spec:
+  pipelineRef:
+    name: custom-load-test-example
+  params:
+    - name: target-url
+      value: "http://vllm:8000"
+    - name: model
+      value: "unsloth/Meta-Llama-3.1-8B"
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi

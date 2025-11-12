@@ -1,0 +1,156 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: guidellm-load-generator
+  namespace: pipelines
+spec:
+  params:
+    - name: target-url
+      type: string
+      description: The target URL for the benchmark
+      default: "http://vllm:8000"
+    - name: model
+      type: string
+      description: The model to benchmark
+      default: "unsloth/Meta-Llama-3.1-8B"
+    - name: rate-type
+      type: string
+      description: Rate type (synchronous, throughput, poisson, constant)
+      default: "synchronous"
+    - name: rate
+      type: string
+      description: Rate for constant/poisson modes (requests per second)
+      default: ""
+    - name: max-concurrency
+      type: string
+      description: Maximum concurrency (for throughput mode)
+      default: "64"
+    - name: prompt-tokens
+      type: string
+      description: Number of prompt tokens
+      default: "128"
+    - name: output-tokens
+      type: string
+      description: Number of output tokens
+      default: "128"
+    - name: max-seconds
+      type: string
+      description: Maximum duration for the benchmark in seconds
+      default: "360"
+    - name: max-requests
+      type: string
+      description: Maximum number of requests (alternative to max-seconds, leave empty to use max-seconds)
+      default: ""
+    - name: data-type
+      type: string
+      description: Data generation type (emulated, file, or custom token counts)
+      default: "emulated"
+    - name: data-path
+      type: string
+      description: Path to data file if data-type is 'file'
+      default: ""
+    - name: output-basename
+      type: string
+      description: Base name for output files (e.g., 'my-benchmark' creates 'my-benchmark.json' and 'my-benchmark-log.txt')
+      default: "benchmark"
+    - name: hf-secret-name
+      type: string
+      description: Name of the secret containing HuggingFace token
+      default: "huggingface-secret"
+    - name: additional-args
+      type: string
+      description: Additional guidellm arguments (space-separated)
+      default: ""
+  results:
+    - name: benchmark-report
+      description: Path to the benchmark JSON report
+      type: string
+    - name: log-file
+      description: Path to the benchmark log file
+      type: string
+  workspaces:
+    - name: results
+      description: Workspace to store benchmark results and logs
+  steps:
+    - name: run-benchmark
+      image: ghcr.io/vllm-project/guidellm:latest
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: HF_HOME
+          value: "/tmp"
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.hf-secret-name)
+              key: token
+              optional: true
+        - name: GUIDELLM__MAX_CONCURRENCY
+          value: "$(params.max-concurrency)"
+      script: |
+        #!/bin/bash
+        set -e
+
+        OUTPUT_JSON="$(workspaces.results.path)/$(params.output-basename).json"
+        OUTPUT_LOG="$(workspaces.results.path)/$(params.output-basename)-log.txt"
+
+        echo "Running $(params.rate-type) benchmark..."
+        echo "Target: $(params.target-url)"
+        echo "Model: $(params.model)"
+        echo "Rate type: $(params.rate-type)"
+
+        # Build the guidellm command
+        CMD="/opt/app-root/bin/guidellm benchmark"
+        CMD="$CMD --target $(params.target-url)"
+        CMD="$CMD --rate-type $(params.rate-type)"
+        CMD="$CMD --model $(params.model)"
+
+        # Add rate if specified (for poisson/constant modes)
+        if [ -n "$(params.rate)" ]; then
+          CMD="$CMD --rate $(params.rate)"
+          echo "Rate: $(params.rate) req/s"
+        fi
+
+        # Add duration or request count
+        if [ -n "$(params.max-requests)" ]; then
+          CMD="$CMD --max-number $(params.max-requests)"
+          echo "Max requests: $(params.max-requests)"
+        else
+          CMD="$CMD --max-seconds $(params.max-seconds)"
+          echo "Max duration: $(params.max-seconds) seconds"
+        fi
+
+        # Add data configuration
+        if [ "$(params.data-type)" = "file" ] && [ -n "$(params.data-path)" ]; then
+          CMD="$CMD --data-type file --data $(params.data-path)"
+          echo "Data: file at $(params.data-path)"
+        else
+          CMD="$CMD --data prompt_tokens=$(params.prompt-tokens),output_tokens=$(params.output-tokens)"
+          echo "Data: prompt_tokens=$(params.prompt-tokens), output_tokens=$(params.output-tokens)"
+        fi
+
+        # Add output path
+        CMD="$CMD --output-path /tmp/benchmarks.json"
+
+        # Add any additional arguments
+        if [ -n "$(params.additional-args)" ]; then
+          CMD="$CMD $(params.additional-args)"
+          echo "Additional args: $(params.additional-args)"
+        fi
+
+        echo ""
+        echo "Command: $CMD"
+        echo ""
+
+        # Run the benchmark and capture logs
+        eval $CMD 2>&1 | tee "$OUTPUT_LOG"
+
+        # Copy results to workspace with specified basename
+        cp /tmp/benchmarks.json "$OUTPUT_JSON"
+        echo ""
+        echo "Benchmark completed. Results saved to workspace."
+        echo "  Report: $OUTPUT_JSON"
+        echo "  Logs: $OUTPUT_LOG"
+
+        # Emit results for artifacts
+        echo -n "$OUTPUT_JSON" > $(results.benchmark-report.path)
+        echo -n "$OUTPUT_LOG" > $(results.log-file.path)
