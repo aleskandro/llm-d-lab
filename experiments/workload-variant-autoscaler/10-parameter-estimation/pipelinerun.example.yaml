@@ -1,0 +1,34 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: llm-parameter-estimation-run
+  namespace: wva-training
+spec:
+  pipelineRef:
+    name: llm-parameter-estimation
+  params:
+    - name: target-url
+      value: "http://vllm:8000"
+    - name: model
+      value: "unsloth/Meta-Llama-3.1-8B"
+    - name: prompt-tokens
+      value: "128"
+    - name: output-tokens
+      value: "128"
+    - name: max-seconds
+      value: "360"
+    - name: max-concurrency
+      value: "64"
+    - name: batch-size
+      value: "64"
+    - name: hf-secret-name
+      value: "huggingface-secret"
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi

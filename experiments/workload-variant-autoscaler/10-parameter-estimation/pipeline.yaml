@@ -1,0 +1,146 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: llm-parameter-estimation
+  namespace: vllm-test
+spec:
+  params:
+    - name: target-url
+      type: string
+      description: The target URL for the benchmark
+      default: "http://vllm:8000"
+    - name: model
+      type: string
+      description: The model to benchmark
+      default: "unsloth/Meta-Llama-3.1-8B"
+    - name: prompt-tokens
+      type: string
+      description: Number of prompt tokens
+      default: "128"
+    - name: output-tokens
+      type: string
+      description: Number of output tokens
+      default: "128"
+    - name: max-seconds
+      type: string
+      description: Maximum duration for each benchmark in seconds
+      default: "360"
+    - name: max-concurrency
+      type: string
+      description: Maximum concurrency for throughput test
+      default: "64"
+    - name: batch-size
+      type: string
+      description: Batch size for parameter calculation (should match max-concurrency)
+      default: "64"
+    - name: hf-secret-name
+      type: string
+      description: Name of the secret containing HuggingFace token
+      default: "huggingface-secret"
+  results:
+    - name: alpha
+      description: Calculated alpha parameter (base latency)
+      type: string
+      value: $(tasks.calculate-parameters.results.alpha)
+    - name: beta
+      description: Calculated beta parameter (incremental latency)
+      type: string
+      value: $(tasks.calculate-parameters.results.beta)
+    - name: parameters-file
+      description: Path to the parameters JSON file
+      type: string
+      value: $(tasks.calculate-parameters.results.parameters-file)
+    - name: synchronous-report
+      description: Path to synchronous benchmark JSON report
+      type: string
+      value: $(tasks.run-synchronous-benchmark.results.benchmark-report)
+    - name: throughput-report
+      description: Path to throughput benchmark JSON report
+      type: string
+      value: $(tasks.run-throughput-benchmark.results.benchmark-report)
+  workspaces:
+    - name: shared-workspace
+      description: Shared workspace for benchmark results and logs
+  tasks:
+    - name: run-synchronous-benchmark
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: guidellm-load-generator
+          - name: namespace
+            value: pipelines
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: model
+          value: $(params.model)
+        - name: rate-type
+          value: synchronous
+        - name: prompt-tokens
+          value: $(params.prompt-tokens)
+        - name: output-tokens
+          value: $(params.output-tokens)
+        - name: max-seconds
+          value: $(params.max-seconds)
+        - name: output-basename
+          value: synchronous
+        - name: hf-secret-name
+          value: $(params.hf-secret-name)
+      workspaces:
+        - name: results
+          workspace: shared-workspace
+
+    - name: run-throughput-benchmark
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: guidellm-load-generator
+          - name: namespace
+            value: pipelines
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: model
+          value: $(params.model)
+        - name: rate-type
+          value: throughput
+        - name: max-concurrency
+          value: $(params.max-concurrency)
+        - name: prompt-tokens
+          value: $(params.prompt-tokens)
+        - name: output-tokens
+          value: $(params.output-tokens)
+        - name: max-seconds
+          value: $(params.max-seconds)
+        - name: output-basename
+          value: throughput
+        - name: hf-secret-name
+          value: $(params.hf-secret-name)
+      workspaces:
+        - name: results
+          workspace: shared-workspace
+      runAfter:
+        - run-synchronous-benchmark
+
+    - name: calculate-parameters
+      taskRef:
+        name: calculate-parameters
+      params:
+        - name: batch-size
+          value: $(params.batch-size)
+        - name: synchronous-basename
+          value: synchronous
+        - name: throughput-basename
+          value: throughput
+      workspaces:
+        - name: results
+          workspace: shared-workspace
+      runAfter:
+        - run-throughput-benchmark
+        - run-synchronous-benchmark
