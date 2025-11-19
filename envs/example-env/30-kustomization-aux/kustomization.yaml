@@ -10,6 +10,7 @@ resources:
   - ../../../manifests/30-grafana
   - ../../../manifests/30-kuadrant
   - ../../../manifests/30-lws
+  - ../../../manifests/30-mlflow
   - ../../../manifests/30-netobserv
   - ../../../manifests/30-sriov-operator
   - ../../../manifests/30-user-monitoring
@@ -18,4 +19,3 @@ resources:
   - ../../../manifests/60-llm-d-rhoai-pre
   - ../../../manifests/60-llm-d-upstream-pre
   - ../../../manifests/80-ops
-  - ../../../manifests/30-mlflow
