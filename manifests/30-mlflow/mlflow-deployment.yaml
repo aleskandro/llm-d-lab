@@ -1,0 +1,193 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-server
+  namespace: mlflow
+  labels:
+    app: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      serviceAccountName: mlflow-sa
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 0
+        fsGroupChangePolicy: "OnRootMismatch"
+      initContainers:
+      - name: wait-for-postgres
+        image: registry.redhat.io/rhel9/postgresql-15:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          until pg_isready -h postgresql -p 5432 -U mlflow; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      - name: generate-auth-config
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            cat > /config/basic_auth.ini <<EOF
+            [mlflow]
+            default_permission = READ
+            database_uri = sqlite:////opt/mlflow/auth/basic_auth.db
+            admin_username = ${ADMIN_USERNAME}
+            admin_password = ${ADMIN_PASSWORD}
+            authorization_function = mlflow.server.auth:authenticate_request_basic_auth
+            EOF
+        env:
+        - name: ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-ui-auth
+              key: username
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-ui-auth
+              key: password
+        volumeMounts:
+        - name: auth-config
+          mountPath: /config
+        securityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      containers:
+      - name: mlflow
+        image: ghcr.io/mlflow/mlflow:v2.18.0
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          set -e
+
+          export HOME=/opt/mlflow
+          export PIP_CACHE_DIR=/opt/mlflow/.cache/pip
+          export PYTHONUSERBASE=/opt/mlflow/.local
+
+          mkdir -p /opt/mlflow/.cache/pip /opt/mlflow/.local /opt/mlflow/auth
+
+          pip install --user --no-warn-script-location psycopg2-binary boto3
+
+          export PATH="/opt/mlflow/.local/bin:$PATH"
+          export PYTHONPATH="/opt/mlflow/.local/lib/python3.10/site-packages:$PYTHONPATH"
+
+          export POSTGRES_USER=$(cat /etc/secrets/postgres/user)
+          export POSTGRES_PASSWORD=$(cat /etc/secrets/postgres/password)
+          export S3_BUCKET=$(cat /etc/secrets/s3/bucket-name)
+
+          # export MLFLOW_FLASK_SERVER_SECRET_KEY="my-secret-key"
+
+          exec mlflow server \
+            --backend-store-uri "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresql:5432/mlflow" \
+            --default-artifact-root "s3://${S3_BUCKET}/" \
+            --host 0.0.0.0 \
+            --port 5000 \
+            --app-name basic-auth \
+            --workers 1
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-s3-secret
+              key: access-key
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-s3-secret
+              key: secret-key
+        - name: AWS_DEFAULT_REGION
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-s3-secret
+              key: region
+        - name: MLFLOW_FLASK_SERVER_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-ui-auth
+              key: flask-secret
+        - name: MLFLOW_AUTH_CONFIG_PATH
+          value: /etc/mlflow/auth/basic_auth.ini
+        volumeMounts:
+        - name: postgres-secret
+          mountPath: /etc/secrets/postgres
+          readOnly: true
+        - name: s3-secret
+          mountPath: /etc/secrets/s3
+          readOnly: true
+        - name: mlflow-home
+          mountPath: /opt/mlflow
+        - name: auth-config
+          mountPath: /etc/mlflow/auth
+          readOnly: true
+        securityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: nvidia.com/gpu
+                operator: DoesNotExist
+              - key: nvidia.com/gpu.present
+                operator: DoesNotExist
+      volumes:
+      - name: postgres-secret
+        secret:
+          secretName: postgresql-secret
+      - name: s3-secret
+        secret:
+          secretName: mlflow-s3-secret
+      - name: auth-config
+        emptyDir: {}
+      - name: mlflow-home
+        emptyDir: {}

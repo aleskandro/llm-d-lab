@@ -18,3 +18,4 @@ resources:
   - ../../../manifests/60-llm-d-rhoai-pre
   - ../../../manifests/60-llm-d-upstream-pre
   - ../../../manifests/80-ops
+  - ../../../manifests/30-mlflow

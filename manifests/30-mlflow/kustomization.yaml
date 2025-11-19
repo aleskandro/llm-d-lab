@@ -1,0 +1,15 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+
+namespace: mlflow
+
+resources:
+  - ./namespace.yaml
+  - ./99-secret-mlflow.yaml
+  - ./rbac.yaml
+  - ./postgresql-pvc.yaml
+  - ./postgresql-deployment.yaml
+  - ./postgresql-service.yaml
+  - ./mlflow-deployment.yaml
+  - ./mlflow-service.yaml
+  - ./httproute.yaml
