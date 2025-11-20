@@ -37,3 +37,13 @@ patches:
       - op: replace
         path: /spec/storageClassName
         value: ibmc-vpc-block-10iops-tier
+  - target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: HTTPRoute
+      name: mlflow
+      namespace: mlflow
+    patch: |-
+      - op: replace
+        path: /spec/hostnames/0
+        value: "mlflow.infra.apps.aleskandro-02.ibm.rhperfscale.org"
