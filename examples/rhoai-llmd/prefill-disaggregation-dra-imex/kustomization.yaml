@@ -1,0 +1,9 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+
+namespace: llm-d-pd-disaggregation-dra-imex
+resources:
+  - namespace.yaml
+  - persistent-volume-claim.yaml
+  - compute-domain.yaml
+  - llm-inference-service.yaml
