@@ -1,0 +1,6 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: llm-d-pd-disaggregation
+  labels:
+    openshift.io/cluster-monitoring: "true"

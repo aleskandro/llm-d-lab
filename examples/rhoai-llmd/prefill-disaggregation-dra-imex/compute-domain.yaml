@@ -1,0 +1,11 @@
+apiVersion: resource.nvidia.com/v1beta1
+kind: ComputeDomain
+metadata:
+  name: compute-domain
+  namespace: llm-d-pd-disaggregation
+spec:
+  channel:
+    allocationMode: Single
+    resourceClaimTemplate:
+      name: imex-channel
+  numNodes: 3
