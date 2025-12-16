@@ -1,0 +1,34 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: sleep
+  namespace: pipelines
+spec:
+  params:
+    - name: duration
+      description: <seconds> or 'infinity'
+      default: "60"
+      type: string
+  results: []
+  workspaces: []
+  steps:
+    - name: helmfile
+      image: ghcr.io/helmfile/helmfile:v1.2.2
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: HF_HOME
+          value: "/tmp"
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.hf-secret-name)
+              key: token
+              optional: true
+      script: |
+        #!/bin/bash
+        d="$(params.duration)"
+        echo "Sleeping for $d..."
+        case "$d" in
+          infinity) while :; do sleep 10; echo "Waiting for manual interrupt"; done;;
+          *) sleep "$d" && echo "Completed sleep duration of $d seconds.";;
+        esac

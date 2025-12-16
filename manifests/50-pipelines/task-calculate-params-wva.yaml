@@ -1,8 +1,8 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: calculate-parameters
-  namespace: vllm-test
+  name: calculate-parameters-for-wva
+  namespace: pipelines
 spec:
   params:
     - name: batch-size
