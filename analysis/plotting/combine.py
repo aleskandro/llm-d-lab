@@ -1,26 +1,14 @@
-import pandas as pd
-import plotly.graph_objects as go
 from prometheus_api_client import PrometheusConnect
-from typing import List, Tuple
-from datetime import datetime
 from plotly.subplots import make_subplots
-import copy
 
 def has_secondary_y(fig):
     return any(getattr(tr, "yaxis", "y") == "y2" for tr in fig.data)
 
-def figures_to_single_row(data, shared_y=True, shared_x=False, horizontal_spacing=0.08, legend_master_plot_index=2):
-    """
-    Combine a list of go.Figure into one figure with 1 row and N columns.
-    Never increases rows.
-
-    share_y/shared_x: optional axis sharing across columns.
-    """
-    fig_tuples = [(name, fig) for name, (_, fig) in data.items()]
-    n = len(fig_tuples)
+def figures_to_single_row(figs_by_name, shared_y=True, shared_x=False, horizontal_spacing=0.08, legend_master_plot_index=2):
+    n = len(figs_by_name)
     if n == 0:
         raise ValueError("figs is empty")
-    specs = [[{"secondary_y": has_secondary_y(f)} for (_, f) in fig_tuples]]
+    specs = [[{"secondary_y": has_secondary_y(f)} for _, f in figs_by_name.items()]]
 
     out = make_subplots(
         rows=1,
@@ -29,10 +17,10 @@ def figures_to_single_row(data, shared_y=True, shared_x=False, horizontal_spacin
         shared_yaxes=shared_y,
         shared_xaxes=shared_x,
         horizontal_spacing=horizontal_spacing,
-        #subplot_titles=[(f.layout.title.text if f.layout.title and f.layout.title.text else "") for f in figs],
     )
 
-    for c, (name, f) in enumerate(fig_tuples, start=1):
+    for c, k in enumerate(figs_by_name, start=1):
+        name, f = k, figs_by_name[k]
         # Add traces
         for tr in f.data:
             tr.showlegend = c == legend_master_plot_index  # Show legend only for first subplot
@@ -51,9 +39,8 @@ def figures_to_single_row(data, shared_y=True, shared_x=False, horizontal_spacin
                 secondary_y=True,
             )
 
-    # Merge some layout bits (keep this conservative to avoid overwriting subplot axes)
     out.update_layout(
-        showlegend=any(getattr(f.layout, "showlegend", True) for (_, f) in fig_tuples),
+        showlegend=any(getattr(f.layout, "showlegend", True) for (_, f) in figs_by_name.items()),
         legend=dict(
             orientation="h",
             x=0.5,
@@ -61,11 +48,7 @@ def figures_to_single_row(data, shared_y=True, shared_x=False, horizontal_spacin
             y=1.02,
             yanchor="bottom",
         ),
-        #margin=dict(t=60),
     )
     out.update_xaxes(rangeslider_visible=False)
     out.update_traces(showlegend=False, selector=dict(type="candlestick"))
-    data_out = copy.deepcopy(data)
-    data_out['merged_figure'] = (None, out)
-    return data_out
-
+    return out

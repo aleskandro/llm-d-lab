@@ -1,1 +1,1 @@
-Disclaimer: this code is mostly generated w/ AI for a quick prototype and to enable a fast iteration cycle of investigation about the LLM-D workload-variant-autoscaler. It needs refactoring.
+Consider this code as experimental and exploratory. 

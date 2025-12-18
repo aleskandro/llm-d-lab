@@ -3,10 +3,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import cm, colors
 
-def luminance(rgb):
-    # rgb in [0, 1]
-    r, g, b = rgb[:3]
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+from analysis.utils.utils import luminance
 
 def clear_bg_for_na(df, cols):
     return [
@@ -17,29 +14,28 @@ def clear_bg_for_na(df, cols):
         for col in cols
     ]
 
-
-def with_relative_change(df, baseline_key="WVA"):
-    wva_ref = df[df["Run"] == baseline_key].set_index("Metric")
+def with_relative_change(df, baseline_key="WVA", run_key="Run", metric_key="Metric"):
+    wva_ref = df[df[run_key] == baseline_key].set_index(metric_key)
     out = df.copy()
     for col in df.columns[2:]:
         ratio_col = f"δ{col} (vs {baseline_key})"
-        out[ratio_col] = out[col] / out["Metric"].map(wva_ref[col]) - 1
-        baseline_mask = out["Run"] == baseline_key
+        out[ratio_col] = out[col] / out[metric_key].map(wva_ref[col]) - 1
+        baseline_mask = out[run_key] == baseline_key
         out.loc[baseline_mask, ratio_col] = out.loc[baseline_mask, ratio_col].replace(1, "")
         idx = out.columns.get_loc(col)
         out.insert(idx + 1, ratio_col, out.pop(ratio_col))
     return out.replace(-np.inf, np.nan).replace(np.inf, np.nan)
 
-def format_with_units(df, metric_scale, metric_unit, baseline_key="WVA"):
+def format_with_units(df, metric_scale, metric_unit, baseline_key="WVA", run_key="Run", metric_key="Metric"):
     cols = df.columns[2:]
     numeric_cols = list(df.select_dtypes("number").columns)
 
     disp = df.copy()
     delta_cols = [c for c in df.columns if f"vs {baseline_key}" in c or c.startswith("δ")]
-    disp.loc[disp["Run"] == baseline_key, delta_cols] = pd.NA
+    disp.loc[disp[run_key] == baseline_key, delta_cols] = pd.NA
 
     for idx, row in disp.iterrows():
-        metric = row["Metric"]
+        metric = row[metric_key]
         scale = metric_scale.get(metric, 1)
         unit  = metric_unit.get(metric, "s")
 
@@ -65,7 +61,7 @@ def format_with_units(df, metric_scale, metric_unit, baseline_key="WVA"):
         vmax = df[col].where(upper_bound).abs().max()
         gmap = df[col].where(
             (df[col].abs() > epsilon) &
-            (df["Run"] != baseline_key) &
+            (df[run_key] != baseline_key) &
             upper_bound
         )
 
@@ -85,18 +81,18 @@ def sort(df, order, categorical_col='Run', primary_col='Metric'):
     df[categorical_col] = pd.Categorical(df[categorical_col], categories=order, ordered=True)
     return df.sort_values([primary_col, categorical_col])
 
-def format_with_units_per_col_metric(df, metric_scale, metric_unit, baseline_key="WVA"):
+def format_with_units_per_col_metric(df, metric_scale, metric_unit, baseline_key="WVA", run_key="Run", metric_key="Metric"):
     numeric_cols = list(df.select_dtypes("number").columns)
     delta_cols = [c for c in df.columns if f"vs {baseline_key}" in c or c.startswith("δ")]
 
     disp = df.copy()
 
     # 1️⃣ Hide deltas for baseline
-    disp.loc[disp["Run"] == baseline_key, delta_cols] = pd.NA
+    disp.loc[disp[run_key] == baseline_key, delta_cols] = pd.NA
 
     # 2️⃣ Format values (display only)
     for idx, row in disp.iterrows():
-        metric = row["Metric"]
+        metric = row[metric_key]
         scale = metric_scale.get(metric, 1)
         unit  = metric_unit.get(metric, "s")
 
@@ -110,7 +106,7 @@ def format_with_units_per_col_metric(df, metric_scale, metric_unit, baseline_key
                 disp.at[idx, col] = f"{v * scale:.2f}{unit}"
 
     # 3️⃣ Metric → colormap (cycled, inferred)
-    metrics = df["Metric"].unique()
+    metrics = df[metric_key].unique()
     cmap_cycle = itertools.cycle(
         ["Blues", "Greens", "Reds", "Oranges", "Purples", "Greys"]
     )
@@ -130,12 +126,12 @@ def format_with_units_per_col_metric(df, metric_scale, metric_unit, baseline_key
             continue
 
         for metric, cmap in metric_to_cmap.items():
-            metric_mask = df["Metric"] == metric
+            metric_mask = df[metric_key] == metric
 
             # base mask (semantic)
             mask = (
                     metric_mask &
-                    (df["Run"] != baseline_key) &
+                    (df[run_key] != baseline_key) &
                     (df[col].abs() > epsilon)
             )
 
@@ -202,6 +198,8 @@ def format_with_units_per_run_metric(
         metric_scale,
         metric_unit,
         baseline_key="WVA",
+        run_key="Run",
+        metric_key="Metric",
         delta_cap=5,
 ):
     numeric_cols = list(df.select_dtypes("number").columns)
@@ -213,11 +211,11 @@ def format_with_units_per_run_metric(
     disp = df.copy()
 
     # 1️⃣ Hide deltas for baseline
-    disp.loc[disp["Run"] == baseline_key, delta_cols] = pd.NA
+    disp.loc[disp[run_key] == baseline_key, delta_cols] = pd.NA
 
     # 2️⃣ Format values (display only)
     for idx, row in disp.iterrows():
-        metric = row["Metric"]
+        metric = row[metric_key]
         scale = metric_scale.get(metric, 1)
         unit  = metric_unit.get(metric, "s")
 
@@ -231,7 +229,7 @@ def format_with_units_per_run_metric(
                 disp.at[idx, col] = f"{v * scale:.2f}{unit}"
 
     # 3️⃣ One base color per Run (excluding baseline)
-    runs = [r for r in df["Run"].unique() if r != baseline_key]
+    runs = [r for r in df[run_key].unique() if r != baseline_key]
 
     cmap = cm.get_cmap("tab10")
     run_to_color = {
@@ -243,7 +241,7 @@ def format_with_units_per_run_metric(
     css = pd.DataFrame("", index=df.index, columns=numeric_cols)
 
     for idx, row in df.iterrows():
-        run = row["Run"]
+        run = row[run_key]
         if run == baseline_key:
             continue
 
