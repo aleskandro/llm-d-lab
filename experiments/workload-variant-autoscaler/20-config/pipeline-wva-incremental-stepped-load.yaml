@@ -1,0 +1,187 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: wva-incremental-stepped-load-test
+  namespace: experiment-01
+spec:
+  params:
+    - name: target-url
+      type: string
+      default: "http://vllm:8000"
+    - name: model
+      type: string
+      default: "unsloth/Meta-Llama-3.1-8B"
+    - name: hf-secret-name
+      type: string
+      default: "huggingface-secret"
+    - name: namespace
+      type: string
+      default: "experiment-01"
+    - name: deployment-name
+      type: string
+      default: "ms-inference-scheduling-llm-d-modelservice-decode"
+    - name: test-name
+      type: string
+      default: "wva-incremental-stepped-load-test"
+    - name: reset-llm-d
+      type: string
+      default: "false"
+    - name: scaled-object
+      type: string
+      default: ""
+    - name: initial-replicas
+      type: string
+      default: "1"
+#  results:
+#    - name: benchmark-reports
+#      type: array
+#      description: "List of benchmark report files generated during the pipeline run."
+#      value: "$(tasks.load-test[*].results.benchmark-report)"
+#    - name: start-time
+#      type: string
+#      description: "Start time of the load test."
+#      value: "$(tasks.load-test[*].results.start-time)"
+#    - name: end-time
+#      type: string
+#      description: "End time of the load test."
+#      value: "$(tasks.load-test[*].results.end-time)"
+#    - name: log-files
+#      type: array
+#      description: "List of log files generated during the load test."
+#      value: "$(tasks.load-test[*].results.log-file)"
+  workspaces:
+    - name: shared-workspace
+  finally:
+    - name: cleanup
+      when:
+        - input: $(params.reset-llm-d)
+          operator: in
+          values: ["true", "True", "TRUE"]
+      taskSpec:
+        steps:
+          - name: delete-scaled-object
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            script: |
+              if [ -n "$(params.scaled-object)" ]; then
+                echo "Deleting ScaledObject"
+                kubectl delete scaledobject vllme-deployment-scaler -n $(params.namespace) || true
+              else
+                echo "No ScaledObject provided, skipping deletion."
+              fi
+              kubectl scale deployment $(params.deployment-name) --replicas=0 -n $(params.namespace)
+  tasks:
+    - name: wait-for-other-pipeline-runs
+      timeout: 4h
+      taskSpec:
+        steps:
+          - name: wait-for-other-pipeline-runs
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            env:
+            - name: PIPELINERUN
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tekton.dev/pipelineRun']
+            script: |
+              echo "Waiting for other pipeline runs to complete..."
+              # FIX ME: can we use leases instead?
+              while [[ "$(kubectl get pods \
+                      -l tekton.dev/pipeline=wva-incremental-stepped-load-test,tekton.dev/pipelineRun!=${PIPELINERUN} \
+                      --field-selector='status.phase=Running' | wc -l 2>/dev/null)" != 0 ]]; do
+                kubectl get pods \
+                      -l tekton.dev/pipeline=wva-incremental-stepped-load-test,tekton.dev/pipelineRun!=${PIPELINERUN} \
+                      --field-selector='status.phase=Running'
+                echo "Other pipeline runs are still in progress. Sleeping for 60s..."
+                sleep 60
+              done
+    - name: reset-llm-d
+      runAfter:
+        - wait-for-other-pipeline-runs
+      when:
+        - input: $(params.reset-llm-d)
+          operator: in
+          values: ["true", "True", "TRUE"]
+      taskSpec:
+        steps:
+          - name: reset-llm-d
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            script: |
+              # TODO handle name 
+              kubectl delete scaledobject vllme-deployment-scaler -n $(params.namespace) || true
+              kubectl scale deployment $(params.deployment-name) --replicas=0 -n $(params.namespace)
+              kubectl scale deployment $(params.deployment-name) --replicas=$(params.initial-replicas) -n $(params.namespace)
+              kubectl wait --for=condition=available --timeout=900s deployment/$(params.deployment-name) -n $(params.namespace)
+              kubectl get pods -n $(params.namespace) | grep $(params.deployment-name)
+              if [ -n "$(params.scaled-object)" ]; then
+                echo "Applying ScaledObject"
+                echo "$(params.scaled-object)" > /tmp/obj.yaml
+                cat /tmp/obj.yaml
+                kubectl apply -n $(params.namespace) -f /tmp/obj.yaml
+              else
+                echo "No ScaledObject provided, skipping."
+              fi
+              echo "Waiting additional 60s for stabilization"
+              sleep 60
+    - name: load-test
+      runAfter:
+        - reset-llm-d
+        - wait-for-other-pipeline-runs
+      timeout: 2h
+      matrix:
+        include:
+          - name: "3600s+0s"
+            params:
+              - name: max-seconds
+                value: "3600"
+              - name: start-delay
+                value: "0"
+          - name: "3000s+600s"
+            params:
+              - name: max-seconds
+                value: "3000"
+              - name: start-delay
+                value: "600"
+          - name: "2400s+1200s"
+            params:
+              - name: start-delay
+                value: "1200"
+              - name: max-seconds
+                value: "2400"
+          - name: "1800s+1800s"
+            params:
+              - name: start-delay
+                value: "1800"
+              - name: max-seconds
+                value: "1800"
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: guidellm-load-generator
+          - name: namespace
+            value: pipelines
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: model
+          value: $(params.model)
+        - name: scenario
+          value: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 2048
+        - name: output-basename
+          value: benchmark-wva
+        - name: hf-secret-name
+          value: $(params.hf-secret-name)
+        - name: basepath
+          value: /workspace/results/$(context.pipelineRun.name)
+        - name: test-name
+          value: $(params.test-name)
+      workspaces:
+        - name: results
+          workspace: shared-workspace

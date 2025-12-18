@@ -1,0 +1,29 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keda-prometheus-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: experiment-01
+  name: keda-prometheus-role
+rules:
+- apiGroups: ["metrics.k8s.io", "custom.metrics.k8s.io", "external.metrics.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keda-prometheus-rolebinding
+  namespace: experiment-01
+subjects:
+- kind: ServiceAccount
+  name: keda-prometheus-sa
+  namespace: experiment-01
+roleRef:
+  kind: Role
+  name: keda-prometheus-role
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,11 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+
+resources:
+  - namespace.yaml
+  - 99-hf-secret.yaml
+  - rbac.yaml
+  - service-classes-config.yaml
+  - trigger-auth.yaml
+  - variant-autoscaling-capacity.yaml
+  - pipeline-wva-incremental-stepped-load.yaml

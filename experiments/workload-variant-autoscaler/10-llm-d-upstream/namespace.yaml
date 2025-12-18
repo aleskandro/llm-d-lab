@@ -1,0 +1,6 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: experiment-01
+  labels:
+    openshift.io/cluster-monitoring: "true"

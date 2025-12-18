@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: verify-llm-d
+  namespace: pipelines
+spec:
+  params:
+    - name: namespace
+      description: Kubernetes namespace to deploy the Helm chart into
+      type: string
+      default: default
+  results: []
+  workspaces: []
+  steps:
+    - name: helmfile
+      image: ghcr.io/helmfile/helmfile:v1.2.2
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: HF_HOME
+          value: "/tmp"
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.hf-secret-name)
+              key: token
+              optional: true
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+        while ! kubectl get pods -n $(params.namespace) -l llm-d.ai/inferenceServing=true -o jsonpath='{.items[0].status.phase}' | grep -q 'Running\|Succeeded'; do
+          echo "Waiting for LLM-D pods to be in Running or Succeeded state..."
+          sleep 10
+        done
+        echo "LLM-D pods are running."
+        # TODO: Add more robust checks here
+        # - Gateway
+        # - HTTPRoute
+        # - curl
+        # - etc...

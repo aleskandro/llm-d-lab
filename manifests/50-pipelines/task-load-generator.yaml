@@ -16,7 +16,7 @@ spec:
     - name: rate-type
       type: string
       description: Rate type (synchronous, throughput, poisson, constant)
-      default: "synchronous"
+      default: ""
     - name: rate
       type: string
       description: Rate for constant/poisson modes (requests per second)
@@ -24,19 +24,19 @@ spec:
     - name: max-concurrency
       type: string
       description: Maximum concurrency (for throughput mode)
-      default: "64"
+      default: ""
     - name: prompt-tokens
       type: string
       description: Number of prompt tokens
-      default: "128"
+      default: ""
     - name: output-tokens
       type: string
       description: Number of output tokens
-      default: "128"
+      default: ""
     - name: max-seconds
       type: string
       description: Maximum duration for the benchmark in seconds
-      default: "360"
+      default: ""
     - name: max-requests
       type: string
       description: Maximum number of requests (alternative to max-seconds, leave empty to use max-seconds)
@@ -44,7 +44,7 @@ spec:
     - name: data-type
       type: string
       description: Data generation type (emulated, file, or custom token counts)
-      default: "emulated"
+      default: ""
     - name: data-path
       type: string
       description: Path to data file if data-type is 'file'
@@ -61,6 +61,22 @@ spec:
       type: string
       description: Additional guidellm arguments (space-separated)
       default: ""
+    - name: start-delay
+      type: string
+      description: Delay before starting the benchmark in seconds
+      default: "0"
+    - name: basepath
+      type: string
+      description: Base path for storing results
+      default: ""
+    - name: scenario
+      type: string
+      description: Scenario config for the benchmark (yaml encoded as a string)
+      default: ""
+    - name: test-name
+      type: string
+      description: Name of the test run
+      default: "guidellm-benchmark"
   results:
     - name: benchmark-report
       description: Path to the benchmark JSON report
@@ -68,10 +84,38 @@ spec:
     - name: log-file
       description: Path to the benchmark log file
       type: string
+    - name: start-time
+      description: Benchmark start time
+      type: string
+    - name: end-time
+      description: Benchmark end time
+      type: string
   workspaces:
     - name: results
       description: Workspace to store benchmark results and logs
   steps:
+    - name: start-delay
+      image: ghcr.io/vllm-project/guidellm:latest
+      imagePullPolicy: IfNotPresent
+      script: |
+        #!/bin/bash
+        set -e
+        if [ -n "$(params.start-delay)" ] && [ "$(params.start-delay)" -gt 0 ]; then
+          echo "Waiting for $(params.start-delay) before starting the benchmark..."
+          sleep $(params.start-delay)
+          echo "Delay complete. Proceeding to benchmark."
+          exit 0
+        fi
+        echo "No start delay specified. Proceeding."
+    - name: label-this-pod
+      image: ghcr.io/helmfile/helmfile:v1.2.2
+      script: |
+          #!/bin/bash
+          set -ex
+          NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+          echo "Labeling pod $HOSTNAME in namespace $NAMESPACE"
+          kubectl label pod $HOSTNAME benchmark-running=true -n $NAMESPACE --overwrite
+          kubectl label pod $HOSTNAME benchmark-test-name="$(params.test-name)" -n $NAMESPACE --overwrite
     - name: run-benchmark
       image: ghcr.io/vllm-project/guidellm:latest
       imagePullPolicy: IfNotPresent
@@ -84,25 +128,46 @@ spec:
               name: $(params.hf-secret-name)
               key: token
               optional: true
-        - name: GUIDELLM__MAX_CONCURRENCY
-          value: "$(params.max-concurrency)"
       script: |
         #!/bin/bash
         set -e
-
-        OUTPUT_JSON="$(workspaces.results.path)/$(params.output-basename).json"
-        OUTPUT_LOG="$(workspaces.results.path)/$(params.output-basename)-log.txt"
+        start_time=$(date --iso-8601=seconds --utc)
+        random_uid=$(cat /proc/sys/kernel/random/uuid)
+        base_path="$(params.basepath)"
+        base_path="${base_path:-$(context.taskRun.name)}"
+        folder_name="$(workspaces.results.path)/${base_path}/benchmark-${start_time}-$random_uid"
+        mkdir -p "$folder_name"
+        OUTPUT_JSON="${folder_name}/$(params.output-basename).json"
+        OUTPUT_LOG="${folder_name}/$(params.output-basename)-log.txt"
 
         echo "Running $(params.rate-type) benchmark..."
         echo "Target: $(params.target-url)"
         echo "Model: $(params.model)"
         echo "Rate type: $(params.rate-type)"
-
+      
+        if [ -n "$(params.max-concurrency)" ]; then
+          echo "Max concurrency: $(params.max-concurrency)"
+          export GUIDELLM__MAX_CONCURRENCY=$(params.max-concurrency) 
+        fi
         # Build the guidellm command
         CMD="/opt/app-root/bin/guidellm benchmark"
-        CMD="$CMD --target $(params.target-url)"
-        CMD="$CMD --rate-type $(params.rate-type)"
-        CMD="$CMD --model $(params.model)"
+        if [ -n "$(params.scenario)" ]; then
+          echo "$(params.scenario)" > /tmp/scenario.yaml
+          CMD="$CMD --scenario /tmp/scenario.yaml"
+          echo "Using scenario configuration."
+        fi
+        if [ -n "$(params.target-url)" ]; then
+          CMD="$CMD --target $(params.target-url)"
+          echo "Target URL: $(params.target-url)"
+        fi
+        if [ -n "$(params.rate-type)" ]; then
+          CMD="$CMD --rate-type $(params.rate-type)"
+          echo "Rate type: $(params.rate-type)"
+        fi
+        if [ -n "$(params.model)" ]; then
+          CMD="$CMD --model $(params.model)"
+          echo "Model: $(params.model)"
+        fi
 
         # Add rate if specified (for poisson/constant modes)
         if [ -n "$(params.rate)" ]; then
@@ -123,13 +188,15 @@ spec:
         if [ "$(params.data-type)" = "file" ] && [ -n "$(params.data-path)" ]; then
           CMD="$CMD --data-type file --data $(params.data-path)"
           echo "Data: file at $(params.data-path)"
-        else
+        fi
+        
+        if [ -n "$(params.prompt-tokens)" ] && [ -n "$(params.output-tokens)" ]; then
           CMD="$CMD --data prompt_tokens=$(params.prompt-tokens),output_tokens=$(params.output-tokens)"
           echo "Data: prompt_tokens=$(params.prompt-tokens), output_tokens=$(params.output-tokens)"
         fi
 
         # Add output path
-        CMD="$CMD --output-path /tmp/benchmarks.json"
+        CMD="$CMD --output-path /tmp/benchmarks.json --disable-progress"
 
         # Add any additional arguments
         if [ -n "$(params.additional-args)" ]; then
@@ -143,7 +210,8 @@ spec:
 
         # Run the benchmark and capture logs
         eval $CMD 2>&1 | tee "$OUTPUT_LOG"
-
+        end_time=$(date --iso-8601=seconds --utc)
+        
         # Copy results to workspace with specified basename
         cp /tmp/benchmarks.json "$OUTPUT_JSON"
         echo ""
@@ -154,3 +222,5 @@ spec:
         # Emit results for artifacts
         echo -n "$OUTPUT_JSON" > $(results.benchmark-report.path)
         echo -n "$OUTPUT_LOG" > $(results.log-file.path)
+        echo -n "$start_time" > $(results.start-time.path)
+        echo -n "$end_time" > $(results.end-time.path)

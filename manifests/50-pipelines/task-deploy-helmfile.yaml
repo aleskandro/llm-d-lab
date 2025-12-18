@@ -1,0 +1,99 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-helmfile
+  namespace: pipelines
+spec:
+  params:
+    - name: values-yaml
+      description: values.yaml file for Helm chart configuration
+      type: string
+    - name: helmfile-repo
+      description: Git repository URL for the Helm chart
+      type: string
+      default: "https://github.com/llm-d/llm-d.git"
+    - name: helmfile-branch
+      description: Git branch to clone the Helm chart repository
+      type: string
+      default: main
+    - name: helmfile-path
+      description: Path to Helmfile in the cloned repository
+      type: string
+    - name: hf-secret-name
+      description: Name of the Kubernetes secret containing Hugging Face token
+      type: string
+      default: huggingface-secret
+    - name: namespace
+      description: Kubernetes namespace to deploy the Helm chart into
+      type: string
+      default: default
+    - name: pre-additional-objects
+      description: >
+        Additional Kubernetes objects to deploy (as URLs or raw YAML strings) before Helmfile apply. 
+        Ensure the namespace is set and exists if needed.
+      type: array
+    - name: post-additional-objects
+      description: >
+        Additional Kubernetes objects to deploy (as URLs or raw YAML strings) after Helmfile apply. 
+        Ensure the namespace is set and exists if needed.
+      type: array
+  results: []
+  workspaces: []
+  steps:
+    - name: helmfile
+      image: ghcr.io/helmfile/helmfile:v1.2.2
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: HF_HOME
+          value: "/tmp"
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.hf-secret-name)
+              key: token
+              optional: true
+      script: |
+        #!/bin/bash
+        set -e
+        deploy() {
+          local obj="$1"
+          if printf '%s\n' "$obj" | grep -E -q '^https?://'; then
+            echo "🌐    Applying from URL: $obj"
+            curl -Lv "$obj" | tee | kubectl apply -f -
+          else
+            # Assume $obj is a raw multi-line YAML string; preserve newlines
+            echo "📄    Applying from raw YAML string."
+            printf '%s\n' "$obj" | tee | kubectl apply -f -
+          fi
+        }
+        
+        echo "🗂️  Creating and configuring namespace $(params.namespace)..."
+        kubectl create namespace $(params.namespace) || true
+        kubectl config set-context --current --namespace=$(params.namespace)
+        echo "🏷️  Labeling namespace for OpenShift monitoring..."
+        kubectl label namespace $(params.namespace) openshift.io/cluster-monitoring=\"true\" --overwrite=true
+        
+        echo "⬆️ Deploying pre-additional-objects..."
+        # Deploy any additional Kubernetes objects if provided
+        for o in $(params.pre-additional-objects[*]); do
+          deploy "$o"
+        done
+        
+        echo "📦 Cloning Helmfile repository and applying Helmfile..."
+        git clone --branch $(params.helmfile-branch) $(params.helmfile-repo) /tmp/chart
+        echo "📝 Writing values.yaml"
+        echo "$(params.values-yaml)" > /tmp/values.yaml
+        echo "📄 values.yaml:" 
+        cat /tmp/values.yaml
+        echo "📁 Applying Helmfile from path: $(params.helmfile-path)"
+        cat /tmp/chart/$(params.helmfile-path)
+        echo "⚙️  Running helmfile apply..."
+        
+        helmfile -n $(params.namespace) apply \
+          -f /tmp/chart/$(params.helmfile-path) --state-values-file /tmp/values.yaml
+        
+        echo "⬇️ Deploying post-additional-objects..."
+        # Deploy any additional Kubernetes objects if provided
+        for o in $(params.post-additional-objects[*]); do
+          deploy "$o"
+        done

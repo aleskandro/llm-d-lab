@@ -7,7 +7,7 @@ to override the values of the [ModelService](https://github.com/llm-d-incubation
 2. Run:
 
 ```shell
-helmfile -n experiment-01 apply -f $LLM_D_REPO_PATH/guides/inference-scheduling/helmfile.yaml.gotmpl -f values.yaml
+helmfile -n experiment-01 apply -f /LLM_D_REPO_PATH/guides/inference-scheduling/helmfile.yaml.gotmpl --state-values-file /path/to/llm-d-lab/examples/llm-d-upstream-simmple/values.yaml
 ```
 
 NOTE: At the time of writing, this depends on https://github.com/llm-d/llm-d/pull/430.

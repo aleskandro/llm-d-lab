@@ -1,0 +1,137 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: calculate-parameters-for-wva
+  namespace: pipelines
+spec:
+  params:
+    - name: batch-size
+      type: string
+      description: The batch size used in the benchmarks (should match max-concurrency)
+      default: "64"
+    - name: synchronous-basename
+      type: string
+      description: Base name for synchronous benchmark files (without extension)
+      default: "synchronous-benchmarks"
+    - name: throughput-basename
+      type: string
+      description: Base name for throughput benchmark files (without extension)
+      default: "throughput-benchmarks"
+  results:
+    - name: alpha
+      description: Calculated alpha parameter (base latency)
+      type: string
+    - name: beta
+      description: Calculated beta parameter (incremental latency)
+      type: string
+    - name: parameters-file
+      description: Path to the parameters JSON file
+      type: string
+  workspaces:
+    - name: results
+      description: Workspace containing benchmark results
+  steps:
+    - name: calculate
+      image: python:3.11-slim
+      script: |
+        #!/usr/bin/env python3
+        import json
+        import sys
+
+        # Read synchronous benchmark results
+        sync_file = '$(workspaces.results.path)/$(params.synchronous-basename).json'
+        with open(sync_file, 'r') as f:
+            sync_data = json.load(f)
+
+        # Read throughput benchmark results
+        throughput_file = '$(workspaces.results.path)/$(params.throughput-basename).json'
+        with open(throughput_file, 'r') as f:
+            throughput_data = json.load(f)
+
+        # Extract ITL (Inter-Token Latency) values
+        # The exact path depends on the guidellm JSON structure
+        # Common patterns: ["report"]["inter_token_latency"]["mean"] or similar
+
+        def extract_itl(data, benchmark_type):
+            """Extract ITL from benchmark data"""
+            try:
+                # TODO: make me safe
+                return data["benchmarks"][0]["metrics"]["inter_token_latency_ms"]["total"]["mean"]
+            except Exception as e:
+                print(f"Error extracting ITL from {benchmark_type}: {e}", file=sys.stderr)
+                return None
+
+        itl_synchronous = extract_itl(sync_data, "synchronous")
+        itl_throughput = extract_itl(throughput_data, "throughput")
+
+        print("\n" + "="*60)
+        print("BENCHMARK RESULTS")
+        print("="*60)
+        print(f"ITL_synchronous: {itl_synchronous}")
+        print(f"ITL_throughput: {itl_throughput}")
+        print("="*60)
+
+        # Calculate alpha and beta
+        # alpha: base latency (from synchronous test)
+        # beta: incremental latency per additional request
+
+        batch_size = float("$(params.batch-size)")
+
+        if itl_synchronous is not None and itl_throughput is not None:
+            # Calculate beta first using the formula:
+            # beta = (ITL_throughput - ITL_synchronous) / (batch_size - 1)
+            if batch_size > 1:
+                beta = (itl_throughput - itl_synchronous) / (batch_size - 1)
+            else:
+                print("\nWARNING: batch_size must be > 1 for proper calculation", file=sys.stderr)
+                print("Using batch_size = 1 will result in division by zero", file=sys.stderr)
+                sys.exit(1)
+
+            # Calculate alpha using the formula:
+            # alpha = ITL_synchronous - beta
+            alpha = itl_synchronous - beta
+
+            print("\nCALCULATED PARAMETERS")
+            print("="*60)
+            print(f"alpha (base latency): {alpha:.6f} ms")
+            print(f"beta (incremental latency per request): {beta:.6f} ms")
+            print(f"batch_size: {batch_size}")
+            print("="*60)
+            print("\nFormulas used:")
+            print(f"  beta = (ITL_throughput - ITL_synchronous) / (batch_size - 1)")
+            print(f"       = ({itl_throughput:.6f} - {itl_synchronous:.6f}) / ({batch_size} - 1)")
+            print(f"       = {beta:.6f} ms")
+            print(f"")
+            print(f"  alpha = ITL_synchronous - beta")
+            print(f"        = {itl_synchronous:.6f} - {beta:.6f}")
+            print(f"        = {alpha:.6f} ms")
+            print("="*60)
+            print("\nLinear model: ITL = alpha + beta × batch_size")
+            print(f"             ITL = {alpha:.6f} + {beta:.6f} × batch_size")
+            print("="*60 + "\n")
+
+            # Save results to a file
+            results = {
+                "itl_synchronous": itl_synchronous,
+                "itl_throughput": itl_throughput,
+                "batch_size": batch_size,
+                "alpha": alpha,
+                "beta": beta
+            }
+
+            with open('$(workspaces.results.path)/parameters.json', 'w') as f:
+                json.dump(results, f, indent=2)
+
+            print("Results saved to parameters.json\n")
+
+            # Emit results for Tekton
+            with open('$(results.alpha.path)', 'w') as f:
+                f.write(str(alpha))
+            with open('$(results.beta.path)', 'w') as f:
+                f.write(str(beta))
+            with open('$(results.parameters-file.path)', 'w') as f:
+                f.write('$(workspaces.results.path)/parameters.json')
+        else:
+            print("\nERROR: Could not extract ITL values from benchmark results", file=sys.stderr)
+            print("Please check the benchmark output files for the correct structure", file=sys.stderr)
+            sys.exit(1)
