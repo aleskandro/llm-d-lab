@@ -1,0 +1,51 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: autoscaling-test-more-replica-
+  namespace: experiment-01
+spec:
+  params:
+    - name: target-url
+      value: 'openshift-ai-inference-openshift-ai-inference.openshift-ingress.svc.cluster.local'
+    - name: model
+      value: meta-llama/Llama-3.1-8B
+    - name: reset-llm-d
+      value: 'true'
+    - name: namespace
+      value: experiment-01
+    - name: test-name
+      value: replicas-4
+    - name: scaled-object
+      value: ""
+    - name: initial-replicas
+      value: "12"
+  pipelineRef:
+    name: wva-incremental-stepped-load-test
+  taskRunTemplate:
+    podTemplate:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+    serviceAccountName: pipeline
+  timeouts:
+    finally: 1h0m0s
+    pipeline: 12h0m0s
+    tasks: 4h0m0s
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        metadata:
+          creationTimestamp: null
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 32Gi
+        status: {}
