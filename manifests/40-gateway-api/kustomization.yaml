@@ -6,27 +6,26 @@ namespace: openshift-ingress
 resources:
 - ./gatewayclass.yaml
 - ./gateway.yaml
-- ./gatewayclass-aux.yaml
 - ./gateway-aux.yaml
 
-patches:
-  - target:
-      group: gateway.networking.k8s.io
-      version: v1
-      kind: Gateway
-      name: openshift-ai-inference
-      namespace: openshift-ingress
-    patch: |-
-      - op: replace
-        path: /spec/listeners/0/hostname
-        value: "REPLACE_ME"
-  - target:
-      group: gateway.networking.k8s.io
-      version: v1
-      kind: Gateway
-      name: infra-gateway
-      namespace: openshift-ingress
-    patch: |-
-      - op: replace
-        path: /spec/listeners/0/hostname
-        value: "REPLACE_ME"
+#patches:
+#  - target:
+#      group: gateway.networking.k8s.io
+#      version: v1
+#      kind: Gateway
+#      name: openshift-ai-inference
+#      namespace: openshift-ingress
+#    patch: |-
+#      - op: replace
+#        path: /spec/listeners/0/hostname
+#        value: "REPLACE_ME"
+#  - target:
+#      group: gateway.networking.k8s.io
+#      version: v1
+#      kind: Gateway
+#      name: infra-gateway
+#      namespace: openshift-ingress
+#    patch: |-
+#      - op: replace
+#        path: /spec/listeners/0/hostname
+#        value: "REPLACE_ME"

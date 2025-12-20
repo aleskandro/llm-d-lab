@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-ocp-aws
+  labels:
+    app.kubernetes.io/managed-by: llm-d-lab
+spec:
+  project: default
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: helm-charts
+    name: ''
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        openshift.io/cluster-monitoring: "true"
+    syncOptions:
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 8
+      backoff:
+        duration: 5s
+        maxDuration: 5m0s
+        factor: 2
+  ignoreDifferences:
+    - group: "machine.openshift.io"
+      kind: "MachineSet"
+      jsonPointers:
+        - /spec/replicas
+        - /metadata/annotations
+  source:
+    repoURL: https://github.com/aleskandro/llm-d-lab.git
+    targetRevision: master
+    path: manifests/01-infra-ocp
+    helm:
+      valuesObject: {}
+      valueFiles:
+        - ../../envs/lab/infra-ocp-aws-values.yaml
+
+

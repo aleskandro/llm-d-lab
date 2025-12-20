@@ -32,6 +32,12 @@ spec:
       description: Workspace containing benchmark results
   steps:
     - name: calculate
+      computeResources:
+        requests:
+          memory: "64Mi"
+          cpu: "10m"
+        limits:
+          memory: "256Mi"
       image: python:3.11-slim
       script: |
         #!/usr/bin/env python3

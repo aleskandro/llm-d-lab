@@ -9,11 +9,15 @@ spec:
       description: <seconds> or 'infinity'
       default: "60"
       type: string
-  results: []
-  workspaces: []
   steps:
     - name: helmfile
       image: ghcr.io/helmfile/helmfile:v1.2.2
+      computeResources:
+        limits:
+          memory: "512Mi"
+        requests:
+          cpu: "250m"
+          memory: "64Mi"
       imagePullPolicy: IfNotPresent
       env:
         - name: HF_HOME

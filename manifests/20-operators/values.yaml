@@ -1,19 +1,21 @@
 # Additional CatalogSources (required for pre-release OCP)
-additionalCatalogSources:
-  - name: my-additional-catalog
-    namespace: openshift-marketplace
-    image: my-registry/my-additional-catalog:latest
-    displayName: Additional Operators Catalog
-    publisher: Acme Corp.
+additionalCatalogSources: []
+#  - name: my-additional-catalog
+#    namespace: openshift-marketplace
+#    image: my-registry/my-additional-catalog:latest
+#    displayName: Additional Operators Catalog
+#    publisher: Acme Corp.
 
 namespace: openshift-marketplace
 
 # Operators to install
-operators:
-  - namespace: my-operator-namespace
-    channel: latest
-    installPlanApproval: Automatic
-    name: my-operator-pkg
-    source: redhat-operators
-    sourceNamespace: openshift-marketplace
-    startingCSV: openshift-gitops-operator.v1.18.1
+operators: []
+#  - namespace: my-operator-namespace
+#    channel: latest
+#    installPlanApproval: Automatic
+#    name: my-operator-pkg
+#    source: redhat-operators
+#    sourceNamespace: openshift-marketplace
+#    startingCSV: openshift-gitops-operator.v1.18.1
+
+cliImage: ghcr.io/helmfile/helmfile:v1.2.2

@@ -9,12 +9,16 @@ spec:
       description: Kubernetes namespace to deploy the Helm chart into
       type: string
       default: default
-  results: []
-  workspaces: []
   steps:
     - name: helmfile
       image: ghcr.io/helmfile/helmfile:v1.2.2
       imagePullPolicy: IfNotPresent
+      computeResources:
+        limits:
+          memory: "512Mi"
+        requests:
+          cpu: "250m"
+          memory: "64Mi"
       env:
         - name: HF_HOME
           value: "/tmp"

@@ -14,7 +14,7 @@ spec:
     - EvictPodsWithPVC
   profileCustomizations:
     namespaces:
-      excludes:
+      excluded:
         - experiment-01
         - experiment-02
         - experiment-03

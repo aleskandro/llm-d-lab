@@ -96,6 +96,12 @@ spec:
   steps:
     - name: start-delay
       image: ghcr.io/vllm-project/guidellm:latest
+      computeResources:
+        requests:
+          memory: "32Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Mi"
       imagePullPolicy: IfNotPresent
       script: |
         #!/bin/bash
@@ -108,6 +114,12 @@ spec:
         fi
         echo "No start delay specified. Proceeding."
     - name: label-this-pod
+      computeResources:
+        requests:
+          memory: "32Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Mi"
       image: ghcr.io/helmfile/helmfile:v1.2.2
       script: |
           #!/bin/bash
@@ -119,6 +131,10 @@ spec:
     - name: run-benchmark
       image: ghcr.io/vllm-project/guidellm:latest
       imagePullPolicy: IfNotPresent
+      computeResources:
+        requests:
+          memory: "128Mi"
+          cpu: "1"
       env:
         - name: HF_HOME
           value: "/tmp"

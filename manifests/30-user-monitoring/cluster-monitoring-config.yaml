@@ -7,7 +7,7 @@ data:
   config.yaml: |
     enableUserWorkload: true
     prometheusK8s:
-      retention: 28d
+      retention: 60d
       volumeClaimTemplate:
         spec:
           resources:

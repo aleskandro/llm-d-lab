@@ -30,15 +30,21 @@ subjects:
     namespace: {{ $ns }}
 ---
 {{- $cliImage := .Values.cliImage }}
+{{- $id := uuidv4 -}}
 {{ range $op := .Values.operators }}
 {{ if $op.consolePlugins }}
 {{ range $cp := $op.consolePlugins }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ $cp }}-enable-{{ $rname }}-{{ $revision }}
+  name: {{ $cp }}-enable-{{ substr 0 8 $id }}
   namespace: {{ $ns }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 300
   template:
     spec:
       serviceAccountName: llmd-ocp-infra-console-plugin-patcher-{{ $rname }}
@@ -53,18 +59,18 @@ spec:
               plugin="{{ $cp }}"
 
               # Ensure Console CR exists
-              oc get console.operator cluster -o name
+              kubectl get console.operator cluster -o name
 
               # If spec.plugins is missing, create it as an empty array
-              if ! oc get console.operator cluster -o jsonpath='{.spec.plugins}' 2>/dev/null | grep -q .; then
-                oc patch console.operator cluster --type=json \
+              if ! kubectl get console.operator cluster -o jsonpath='{.spec.plugins}' 2>/dev/null | grep -q .; then
+                kubectl patch console.operator cluster --type=json \
                   -p='[{"op":"add","path":"/spec/plugins","value":[]}]'
               fi
 
               # Append the plugin if not present
-              if ! oc get console.operator cluster -o jsonpath='{.spec.plugins[*]}' | tr ' ' '\n' | grep -qx "$plugin"; then
+              if ! kubectl get console.operator cluster -o jsonpath='{.spec.plugins[*]}' | tr ' ' '\n' | grep -qx "$plugin"; then
                 for i in {1..10}; do
-                    oc patch console.operator cluster --type=json \
+                    kubectl patch console.operator cluster --type=json \
                       -p="[ { \"op\": \"add\", \"path\": \"/spec/plugins/-\", \"value\": \"${plugin}\" } ]" && break
                     sleep 10
                 done
@@ -76,12 +82,14 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ $cp }}-disable-{{ $rname }}-{{ $revision }}
+  name: {{ $cp }}-disable-{{ substr 0 8 $id }}
   namespace: {{ $ns }}
   annotations:
     "helm.sh/hook": pre-delete
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 300
   template:
     spec:
       serviceAccountName: llmd-ocp-infra-console-plugin-patcher-{{ $rname }}
@@ -92,10 +100,33 @@ spec:
           command: ["/bin/bash","-ceu"]
           args:
             - |
+              set -o pipefail
               plugin="{{ $cp }}"
-              oc patch console.operator cluster --type=json \
-                -p="[ { \"op\": \"remove\", \"path\": \"/spec/plugins/-\", \"value\": \"${plugin}\" } ]" || echo "error"
-              echo "Removed plugin ${plugin} from Console spec.plugins"
+
+              # If spec.plugins is missing or empty, nothing to do
+              if ! kubectl get console.operator cluster -o jsonpath='{.spec.plugins}' 2>/dev/null | grep -q .; then
+                echo "No plugins configured on Console; nothing to remove."
+                exit 0
+              fi
+
+              # Load plugins into a bash array (one per line)
+              readarray -t plugins < <(kubectl get console.operator cluster -o jsonpath='{.spec.plugins[*]}' | tr ' ' '\n')
+
+              # Find index of plugin and remove by index using JSON Patch (remove requires index)
+              idx=-1
+              for i in "${!plugins[@]}"; do
+                if [ "${plugins[$i]}" = "$plugin" ]; then
+                  idx="$i"
+                  break
+                fi
+              done
+
+              if [ "$idx" -ge 0 ]; then
+                kubectl patch console.operator cluster --type=json \
+                  -p="[ { \"op\": \"remove\", \"path\": \"/spec/plugins/${idx}\" } ]" && echo "Removed plugin ${plugin} from Console spec.plugins" || echo "Failed to remove plugin ${plugin}"
+              else
+                echo "Plugin ${plugin} not present; nothing to do."
+              fi
 ---
 {{- end }}
 {{- end }}

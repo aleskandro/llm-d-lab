@@ -4,11 +4,9 @@ metadata:
   name: openshift-ai-inference
   namespace: openshift-ingress 
 spec:
-  gatewayClassName: openshift-ai-inference 
+  gatewayClassName: openshift-default
   listeners:
   - name: http 
-    # TODO: How to handle hostname and certificate?
-    hostname: "REPLACE_ME"
     port: 80
     protocol: HTTP
     #tls:

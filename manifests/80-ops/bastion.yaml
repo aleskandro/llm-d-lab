@@ -1,0 +1,56 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: bastion-daemon
+  namespace: debugging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bastion-daemon
+  template:
+    metadata:
+      labels:
+        app: bastion-daemon
+        openshift.io/scc: privileged
+    spec:
+      serviceAccountName: bastion-daemon
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+        runAsNonRoot: false
+      containers:
+        - name: httpd
+          image: quay.io/aleskandrox/fedora:ai-toolbox
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            privileged: true
+          command:
+          - /bin/bash
+          args:
+          - -c
+          - sleep infinity
+          volumeMounts:
+            - name: ssh-key
+              mountPath: /root/.ssh
+              readOnly: true
+            - name: bastion-storage
+              mountPath: /workdir
+      volumes:
+        - name: ssh-key
+          secret:
+            secretName: ssh-key
+            optional: true
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: bastion-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 32Gi
+        storageClassName: gp3-csi

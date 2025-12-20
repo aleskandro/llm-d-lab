@@ -71,7 +71,7 @@ spec:
         kubectl create namespace $(params.namespace) || true
         kubectl config set-context --current --namespace=$(params.namespace)
         echo "🏷️  Labeling namespace for OpenShift monitoring..."
-        kubectl label namespace $(params.namespace) openshift.io/cluster-monitoring=\"true\" --overwrite=true
+        kubectl label namespace $(params.namespace) openshift.io/user-monitoring=\"true\" --overwrite=true
         
         echo "⬆️ Deploying pre-additional-objects..."
         # Deploy any additional Kubernetes objects if provided

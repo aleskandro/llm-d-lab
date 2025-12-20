@@ -17,7 +17,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/listeners/0/hostname
-        value: "*.gwapi.apps.aleskandro-01.psap.aws.rhperfscale.org"
+        value: "*.gwapi.apps.<CLUSTER-NAME>.<BASE-DOMAIN>"
   - target:
       group: gateway.networking.k8s.io
       version: v1
@@ -27,7 +27,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/listeners/0/hostname
-        value: "*.infra.apps.aleskandro-01.psap.aws.rhperfscale.org"
+        value: "*.infra.apps.<CLUSTER-NAME>.<BASE-DOMAIN>"
   - target:
       group: loki.grafana.com
       version: v1

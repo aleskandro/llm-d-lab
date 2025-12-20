@@ -5,8 +5,8 @@ metadata:
 spec:
   scaleDown:
     enabled: {{ .Values.autoscaler.enableScaleDown | default true }}
-    delayAfterAdd: 1800s # 30 minutes
-    unneededTime: 900s # 15 minutes
+    delayAfterAdd: 7200s # 2 hours
+    unneededTime: 3600s # 1 hour
   balanceSimilarNodeGroups: true
   ignoreDaemonsetsUtilization: true
   maxPodGracePeriod: 600

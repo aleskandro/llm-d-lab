@@ -1,15 +1,4 @@
-# Additional CatalogSources (required for pre-release OCP)
-additionalCatalogSources:
-  - displayName: Certified Operators (4.19)
-    image: registry.redhat.io/redhat/certified-operator-index:v4.19
-    name: certified-operators-4-19
-    namespace: openshift-marketplace
-    publisher: Red Hat
-  - displayName: Red Hat Operators (4.19)
-    image: registry.redhat.io/redhat/redhat-operator-index:v4.19
-    name: redhat-operators-4-19
-    namespace: openshift-marketplace
-    publisher: Red Hat
+additionalCatalogSources: []
 
 cliImage: registry.ci.openshift.org/origin/4.16:cli
 namespace: openshift-marketplace
@@ -31,13 +20,13 @@ operators:
   - channel: stable
     name: nfd
     namespace: openshift-nfd
-    source: redhat-operators-4-19
+    source: redhat-operators
     sourceNamespace: openshift-marketplace
     targetNamespace: openshift-nfd
   - channel: v25.3
     name: gpu-operator-certified
     namespace: nvidia-gpu-operator
-    source: certified-operators-4-19
+    source: certified-operators
     sourceNamespace: openshift-marketplace
     targetNamespace: nvidia-gpu-operator
   - channel: stable-v1.0
@@ -56,25 +45,25 @@ operators:
   - channel: stable
     name: sriov-network-operator
     namespace: openshift-sriov-network-operator
-    source: redhat-operators-4-19
+    source: redhat-operators
     sourceNamespace: openshift-marketplace
     targetNamespace: openshift-sriov-network-operator
   - channel: stable
     name: rhcl-operator
     namespace: kuadrant-system
-    source: redhat-operators-4-19
+    source: redhat-operators
     sourceNamespace: openshift-marketplace
   - channel: stable
     name: cluster-kube-descheduler-operator
     namespace: openshift-kube-descheduler-operator
-    source: redhat-operators-4-19
+    source: redhat-operators
     sourceNamespace: openshift-marketplace
     targetNamespace: openshift-kube-descheduler-operator
   - channel: stable
     name: openshift-custom-metrics-autoscaler-operator
     namespace: openshift-keda
     operatorName: openshift-custom-metrics-autoscaler-operator
-    source: redhat-operators-4-19
+    source: redhat-operators
     sourceNamespace: openshift-marketplace
   - channel: stable
     name: netobserv-operator
@@ -96,3 +85,9 @@ operators:
     namespace: openshift-multiarch-tuning-operator
     source: redhat-operators
     sourceNamespace: openshift-marketplace
+  - channel: stable
+    name: aws-efs-csi-driver-operator
+    namespace: openshift-cluster-csi-drivers
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+# TODO: Add Kueue

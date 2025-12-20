@@ -98,7 +98,6 @@ spec:
     enable: false
   processor:
     imagePullPolicy: IfNotPresent
-    kafkaConsumerAutoscaler: null
     kafkaConsumerBatchSize: 10485760
     kafkaConsumerQueueCapacity: 1000
     kafkaConsumerReplicas: 3

@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: netobserv
+  labels:
+    app.kubernetes.io/managed-by: llm-d-lab
+spec:
+  destination:
+    name: ''
+    namespace: netobserv
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: manifests/30-netobserv
+    repoURL: https://github.com/aleskandro/llm-d-lab.git
+    targetRevision: master
+  sources: []
+  project: default
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+      allowEmpty: false
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 8
+      backoff:
+        duration: 5s
+        maxDuration: 5m0s
+        factor: 2

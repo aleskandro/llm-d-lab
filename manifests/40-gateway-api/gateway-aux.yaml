@@ -4,11 +4,9 @@ metadata:
   name: infra-gateway
   namespace: openshift-ingress 
 spec:
-  gatewayClassName: infra-gateway 
+  gatewayClassName: openshift-default
   listeners:
   - name: http 
-    # TODO: How to handle hostname and certificate?
-    hostname: "REPLACE_ME"
     port: 80
     protocol: HTTP
     #tls:

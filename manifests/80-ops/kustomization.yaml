@@ -7,5 +7,5 @@ resources:
   - namespace.yaml
   - serviceaccount.yaml
   - clusterrolebinding.yaml
-  #- 99-secret.yaml
-  - daemonset.yaml
+  - bastion.yaml
+  - ssh-tunnel.yaml

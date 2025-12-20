@@ -1,0 +1,111 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: ssh-gateway
+  namespace: debugging
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ssh-gateway
+  namespace: debugging
+subjects:
+  - kind: ServiceAccount
+    name: ssh-gateway
+    namespace: debugging
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ssh-gateway-auth-and-metrics
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ssh-gateway-auth-and-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ssh-gateway-auth-and-metrics
+subjects:
+  - kind: ServiceAccount
+    name: ssh-gateway
+    namespace: debugging
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ssh-gateway
+  namespace: debugging
+  labels:
+    app: ssh-gateway
+spec:
+  selector:
+    app: ssh-gateway
+  ports:
+    - name: ssh
+      port: 22
+      targetPort: 2222
+    - name: metrics
+      port: 8443
+      targetPort: 8443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ssh-gateway
+  namespace: debugging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ssh-gateway
+  template:
+    metadata:
+      labels:
+        app: ssh-gateway
+    spec:
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+        runAsNonRoot: false
+      serviceAccountName: ssh-gateway
+      containers:
+        - name: ssh
+          image: linuxserver/openssh-server:latest
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "UTC"
+            - name: DOCKER_MODS
+              value: "linuxserver/mods:openssh-server-ssh-tunnel"
+            - name: PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: id_ed25519.pub
+                  name: ssh-key
+          ports:
+            - containerPort: 2222
+            - containerPort: 8443
+          readinessProbe:
+            tcpSocket:
+              port: 2222
+            initialDelaySeconds: 5
+            periodSeconds: 10

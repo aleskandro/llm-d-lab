@@ -1,0 +1,21 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+namespace: openshift-gitops
+resources:
+  - namespace.yaml
+  - ../../apps/01-infra-ocp-aws
+  - ../../apps/20-operators
+  - ../../apps/25-descheduler
+  - ../../apps/25-dns
+  - ../../apps/25-multiarch-tuning-operator
+  - ../../apps/27-gitops
+  - ../../apps/30-cert-manager
+  - ../../apps/30-gpu-operator-nfd
+  - ../../apps/30-grafana
+  - ../../apps/30-lws
+  - ../../apps/30-netobserv
+  - ../../apps/30-user-monitoring
+  - ../../apps/40-gateway-api
+  - ../../apps/50-pipelines
+  - ../../apps/60-llm-d-upstream-pre
+  - ../../apps/80-ops
