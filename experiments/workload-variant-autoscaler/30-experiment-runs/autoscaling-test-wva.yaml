@@ -6,7 +6,7 @@ metadata:
 spec:
   params:
     - name: target-url
-      value: 'openshift-ai-inference-openshift-ai-inference.openshift-ingress.svc.cluster.local'
+      value: 'http://openshift-ai-inference-openshift-ai-inference.openshift-ingress.svc.cluster.local'
     - name: model
       value: meta-llama/Llama-3.1-8B
     - name: reset-llm-d
@@ -29,7 +29,7 @@ spec:
           scaleTargetRef:
             apiVersion: apps/v1                 
             kind: Deployment                   
-            name: ms-inference-scheduling-llm-d-modelservice-decode
+            name: llm-d-inference-scheduling-llm-d-modelservice-decode
           pollingInterval: 10  
           cooldownPeriod: 30
           initialCooldownPeriod: 30
@@ -42,7 +42,7 @@ spec:
           advanced:
             restoreToOriginalReplicaCount: false
             horizontalPodAutoscalerConfig:
-              name: ms-inference-scheduling-llm-d-modelservice-decode-hpa
+              name: llm-d-inference-scheduling-llm-d-modelservice-decode-hpa
               behavior:
                 scaleDown:
                   stabilizationWindowSeconds: 60
@@ -72,7 +72,7 @@ spec:
                 serverAddress: 'https://thanos-querier.openshift-monitoring.svc.cluster.local:9091'
                 query: |
                   inferno_desired_replicas{
-                    variant_name='ms-inference-scheduling-llm-d-modelservice-decode',
+                    variant_name='llm-d-inference-scheduling-llm-d-modelservice-decode',
                     exported_namespace='experiment-01'
                   }
                 threshold: '1'

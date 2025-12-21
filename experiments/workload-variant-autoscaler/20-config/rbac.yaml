@@ -3,6 +3,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: keda-prometheus-sa
+  namespace: experiment-01
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -27,3 +28,16 @@ roleRef:
   kind: Role
   name: keda-prometheus-role
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-monitoring-view-keda-prometheus-sa
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: keda-prometheus-sa
+    namespace: experiment-01

@@ -19,7 +19,7 @@ spec:
       default: "experiment-01"
     - name: deployment-name
       type: string
-      default: "ms-inference-scheduling-llm-d-modelservice-decode"
+      default: "llm-d-inference-scheduling-llm-d-modelservice-decode"
     - name: test-name
       type: string
       default: "wva-incremental-stepped-load-test"

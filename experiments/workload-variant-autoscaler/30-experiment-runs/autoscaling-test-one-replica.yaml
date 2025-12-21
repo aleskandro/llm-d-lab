@@ -6,7 +6,7 @@ metadata:
 spec:
   params:
     - name: target-url
-      value: 'openshift-ai-inference-openshift-ai-inference.openshift-ingress.svc.cluster.local'
+      value: 'http://openshift-ai-inference-openshift-ai-inference.openshift-ingress.svc.cluster.local'
     - name: model
       value: meta-llama/Llama-3.1-8B
     - name: reset-llm-d
