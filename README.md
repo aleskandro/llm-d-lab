@@ -25,7 +25,17 @@ Accelerate reproducible inference experiments for large language models with [LL
 - 🧪 Precise-prefix cache-aware experiments
 - 🔄 GitOps App-of-Apps via Argo CD (WIP)
 
----
+## 💡 Philosophy
+
+- 🔁 GitOps-first: Everything is managed via ArgoCD applications
+- 📄 No script: Prefer declarative manifests over imperative scripts
+- ⚡ Low friction and dependencies on the user's workstation tooling
+- 🧩 Modular & extensible: Fork Customize via Kustomize overlays
+- ☸️ Cloud-native: Leverage OpenShift operators & best practices
+- 🔁 Reproducible: Version-controlled manifests for consistent setups
+- 🔬 Experiment-focused: Ready-to-run LLM-D workloads & experiments
+
+------
 
 ## 🛠️ Cluster Prerequisites
 - OpenShift 4.20+
@@ -71,9 +81,35 @@ The `examples/` folder contains example manifests and Helmfiles to deploy LLM-D 
 
 See [experiments/workload-variant-autoscaler](experiments/workload-variant-autoscaler) for a complete example of deploying Upstream LLM-D with Workload Variant Autoscaling and collect some metrics for analysis.
 
-## Structure of the repo
+## ⚠️ Limitations and Notes
 
-To be refined and documented
+- When deploying the full env in `env/lab`, MachineSets and Cluster Autoscaling are configured together with the operators installation. In case of SNO clusters, the master is configured to not host user workloads anymore, but the MachineSets and Cluster Autoscaler are still progressing. The cluster will eventually converge to the desired state, but it's suggested to have some worker nodes already available to speed up the initial setup and make it more reliable.
+- The uninstallation of this stack is not yet fully supported. For example, operators manged via OLM will not be removed automatically and manual clean-up might be needed. Still, as MachineSets and Cluster Autoscaler are removed, be sure to provision some worker nodes to allow the re-scheduling of the remaining workloads.
+
+## 📝 Backlog
+
+- [ ] Add IBMCloud overlay
+- [ ] CertManager configuration
+- [ ] Kuadrant configuration
+- [ ] Authorino configuration
+- [ ] Other Grafana dashboards
+- [ ] Grafana Authentication should be backed by Openshift OAuth
+- [ ] Review RBACs, resource requests/limits, and other manifests refinements
+
+## 📁 Structure of the repo
+
+```shell
+apps/                  # ArgoCD Applications manifests. Each folder should refer to an Helm or Kustomize project, defined in /manifests if not external.
+envs/                  # Kustomize base for different environments (e.g., lab, demo, AWS, IBMCloud)
+examples/              # Example Helmfiles and manifests to deploy LLM-D workloads on top of the deployed platform, either Upstream or via RHOAI/ODH.
+experiments/           # Example experiments leveraging the deployed platform
+manifests/             # Helm charts and Kustomize bases for operators and platform services
+overlays/              # Kustomize overlays for different environments. 
+```
+
+`/overlays/` in this repo only contains examples at the time of writing.
+Some sensitive information might be added in `overlays/` in private forks to control several clusters with different configurations (cloud providers, hostnames, secrets, ...), in full compliance with the GitOps App of Apps pattern.
+
 
 ## 🔧 Customizing the environments
 
