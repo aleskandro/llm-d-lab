@@ -1,9 +1,0 @@
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: experiment-01
-  labels:
-    openshift.io/user-monitoring: "true"
-  annotations:
-    # TODO: tolerations should be added through the llm-d Helm charts values
-    scheduler.alpha.kubernetes.io/defaultTolerations: '[{"key":"benchmark.llm-d.ai/test-gpu-amd64","operator":"Exists","effect":"NoSchedule"}]'
