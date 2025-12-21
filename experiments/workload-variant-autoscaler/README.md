@@ -2,7 +2,7 @@
 
 ## Scenario of testing
 
-This experiment ran on a 4.20 OCP cluster on AWS leveraging 3x g6e.2xlarge GPU instances, each with 4x Nvidia L40S GPUs.
+This experiment ran on a 4.20 OCP cluster on AWS leveraging 3x g6e.12xlarge GPU instances, each with 4x Nvidia L40S GPUs.
 
 The model under test is LLama-3.1-8B.
 
@@ -14,10 +14,18 @@ Multiple time-shifted GuideLLM instances apply a stair-step signal to the deploy
 - +0.5 Hz / 10 minutes
 - 30m-60m: 2Hz
 
-## Deploy the cluster
+## Provision the cluster and infrastructure
+
+### Using the full setup
+1. Deploy a fresh cluster and only install the Openshift GitOps Operator (ArgoCD).
+2. Clone this repo or fork it if you need to make changes to the infra manifests.
+3. Deploy the Kustomize project in [llm-d-lab/deploy/](../../deploy/) to set up the cluster Day2 infra. Be sure to have some workers to host the initial configuration load. The GitOps project will also deploy MachineSets and autoscaling to add other nodes as needed.
+4. Wait until all the applications are healthy in ArgoCD.
+
+### Other information for manual setups
 
 Day2 requirements:
-
+- ArgoCD (Openshift GitOps Operator)
 - NVIDIA GPU Operator
 - Node Feature Discovery Operator
 - Openshift Service Mesh Operator
@@ -26,46 +34,28 @@ Day2 requirements:
 - A storage class supporting ReadWriteMany PVCs (e.g. NFS, ODF, etc.)
 - The Tekton tasks in [llm-d-lab/manifests/50-pipelines](../../manifests/50-pipelines) deployed in the cluster.
 
-The cluster's day2 operations in this experiment are managed with the scripts in this repo (see the main README.md for details), 
-running on a fresh OCP 4.20 cluster.
+The cluster's day2 operations in this experiment are managed with the scripts in this repo (see the main README.md for details), running on a fresh OCP 4.20 cluster.
 
-**Disclaimer**: This repo is a continuous work in progress and still very experimental. It might be broken at times as we
-conclude the initial PoC phase.
+If you use the full, make sure you're in a fresh OCP Cluster and that you have deployed ArgoCD (Openshift GitOps Operator) in the cluster (no other configuration is needed).
 
-## Deploy LLM-D
+**Disclaimer**: This repo is a continuous work in progress and still very experimental. It might be broken at times as we conclude the initial PoC phase.
 
-Considering the inference scheduling Well-Lit Path, use the values.yaml file in 
-[./10-llm-d-upstream/values.yaml](./10-llm-d-upstream/values.yaml).
+## Deploy LLM-D and the Workload Variant Autoscaler
 
-At the time of writing, using the fork of the llm-d guides repo in [this PR](https://github.com/llm-d/llm-d/pull/430), you
-can run:
-```shell
-helmfile -n experiment-01 apply -f /LLM_D_REPO_PATH/guides/inference-scheduling/helmfile.yaml.gotmpl --state-values-file /path/to/llm-d-lab/examples/llm-d-upstream-simmple/values.yaml
-```
-
-If you are using the official llm-d guides repo, you can manually override the llm-d chart values, using the ones in
-[./10-llm-d-upstream/values.yaml](./10-llm-d-upstream/values.yaml) as reference.
-
+This procedure is only tested in clusters using the full setup described above.
 
 ```shell
-oc apply -k .
+oc apply -k ./10-llm-d-upstream
+oc apply -k ./10-workload-variant-autoscaler
 ```
 
-- You can change the HTTPRoute manifest to match your setup via kustomization patches.
-- Patch the PVC configuration to match your storage class.
+You'll find the deployment of LLM-D in the namespace `experiment-01`.
+The Workload Variant Autoscaler is deployed in the namespace `llm-d-autoscaler`.
 
-## Deploy the workload variant autoscaler
+Ensure the ArgoCD applications are healthy.
 
-Use the values files in 
-[./10-workload-variant-autoscaler/values.yaml](./10-workload-variant-autoscaler/values.yaml) and deploy the Helm chart
-at https://github.com/llm-d-incubation/workload-variant-autoscaler/tree/v0.4.1/charts/workload-variant-autoscaler
-
-## Additional configuration
-
-Duplicate ./20-config/99-hf-secret.example.yaml as ./20-config/99-hf-secret.yaml and fill in your HuggingFace token.
-
-Apply the manifests in ./20-config:
-```
+Apply the additional configuration in ./20-config.
+```shell
 oc apply -k ./20-config
 ```
 
@@ -73,7 +63,7 @@ oc apply -k ./20-config
 
 Use the Tekton pipeline runs defined in [./30-experiment-runs](./30-experiment-runs).
 
-## Extract and store results
+## Jupyter notebook for data visualization
 
 The data are extracted from the Prometheus instance running in the cluster, managed by the Cluster Monitoring Operator.
 
@@ -86,10 +76,10 @@ Use the notebook in [/analysis/wva-extract-store.ipynb](../../analysis/wva-extra
 ```shell
 oc create token bastion-daemon -n debugging --duration 240h
 ```
+- Set the values in the top cell of the notebook.
 - Port-forward the Prometheus service for local execution:
 ```shell
 oc port-forward -n openshift-monitoring svc/thanos-querier 9091:9091
 ```
-- Set up the parameters in the top cell of the notebook and run it.
 
-Use the notebook in [/analysis/wva-analyze.ipynb](../../analysis/wva-analyze.ipynb) to render the analysis report.
+Set up the parameters in the top cell of the notebook and run it.
