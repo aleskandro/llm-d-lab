@@ -6,3 +6,5 @@ resources:
   - trigger-auth.yaml
   - keda-prometheus-sa-token-secret.yaml
   - pipeline-wva-incremental-stepped-load.yaml
+  - variant-autoscaling-capacity.yaml
+  - 99-hf-secret.yaml

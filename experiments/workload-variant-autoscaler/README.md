@@ -44,6 +44,9 @@ If you use the full, make sure you're in a fresh OCP Cluster and that you have d
 
 This procedure is only tested in clusters using the full setup described above.
 
+Verify and fill any required values in the `10-*/patch-*-values.yaml`. Also create the secrets from the examples secrets
+`99-*.example.yaml` by duplicating them and removing the `.example` extension.
+
 ```shell
 oc apply -k ./10-llm-d-upstream
 oc apply -k ./10-workload-variant-autoscaler

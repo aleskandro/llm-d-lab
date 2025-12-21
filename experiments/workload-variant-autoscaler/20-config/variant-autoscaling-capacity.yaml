@@ -1,0 +1,15 @@
+apiVersion: llmd.ai/v1alpha1
+# Optimizing a variant, create only when the model is deployed and serving traffic
+# this is for the collector the collect existing (previous) running metrics of the variant.
+kind: VariantAutoscaling
+metadata:
+  name: llm-d-inference-scheduling-llm-d-modelservice-decode
+  namespace: experiment-01
+  labels:
+    inference.optimization/acceleratorName: L40S
+# This is essentially static input to the optimizer
+spec:
+  # OpenAI API compatible name of the model
+  modelID: meta-llama/Llama-3.1-8B
+  variantCost: "10"
+
