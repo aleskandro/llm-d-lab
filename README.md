@@ -28,7 +28,7 @@ Accelerate reproducible inference experiments for large language models with [LL
 ## 💡 Philosophy
 
 - 🔁 GitOps-first: Everything is managed via ArgoCD applications
-- 📄 No script: Prefer declarative manifests over imperative scripts
+- 📄 Avoid local scripts execution: Prefer declarative manifests and Kubernetes control loops over imperative scripts to run locally
 - ⚡ Low friction and dependencies on the user's workstation tooling
 - 🧩 Modular & extensible: Fork Customize via Kustomize overlays
 - ☸️ Cloud-native: Leverage OpenShift operators & best practices
@@ -95,6 +95,10 @@ See [experiments/workload-variant-autoscaler](experiments/workload-variant-autos
 - [ ] Other Grafana dashboards
 - [ ] Grafana Authentication should be backed by Openshift OAuth
 - [ ] Review RBACs, resource requests/limits, and other manifests refinements
+- [ ] Multi-tenancy and concurrent deployments and experiment jobs management, e.g., via Tekton Pipelines, Kueue, and other tools for workload orchestration
+- [ ] Most operators are configured in their simplest form and in the global manifests. Further tuning and customizations might be needed for specific use cases, e.g., for the configuration of the NVidia GPU Operator and networking. Such configuration will be unlocked from the global manifests and moved to dedicated environment overlays or experiments, given the assessment of the requiremeents to enable multi-tenancy and concurrent experiments on the same cluster (see previous point)
+- [ ] More example workloads and experiments
+- [ ] Documentation
 
 ## 📁 Structure of the repo
 
@@ -108,8 +112,9 @@ overlays/              # Kustomize overlays for different environments.
 ```
 
 `/overlays/` in this repo only contains examples at the time of writing.
-Some sensitive information might be added in `overlays/` in private forks to control several clusters with different configurations (cloud providers, hostnames, secrets, ...), in full compliance with the GitOps App of Apps pattern.
+Clusters-specific `overlays/` should not have secrets and might stay in private forks to control several clusters with different configurations (cloud providers, hostnames, secrets, ...), fully leveraging the GitOps App of Apps pattern.
 
+The examples inherently violate the pattern as they change the children applications with information about the managed cluster we prefer not to disclose publicly, e.g., the base domain of the managed clusters. This is today a practical compromise for experimentation purposes to avoid over-complicating secrets management and delivery.
 
 ## 🔧 Customizing the environments
 
