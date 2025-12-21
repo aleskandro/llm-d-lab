@@ -69,7 +69,7 @@ The `examples/` folder contains example manifests and Helmfiles to deploy LLM-D 
 
 ## 🧪 Example experiment: Upstream LLM-D w/ Workload Variant Autoscaler
 
-See [experiments/workload-variant-autoscaler/README.md](experiments/workload-variant-autoscaling/README.md) for a complete example of deploying Upstream LLM-D with Workload Variant Autoscaling and collect some metrics for analysis.
+See [experiments/workload-variant-autoscaler](experiments/workload-variant-autoscaler) for a complete example of deploying Upstream LLM-D with Workload Variant Autoscaling and collect some metrics for analysis.
 
 ## Structure of the repo
 

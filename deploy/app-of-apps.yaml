@@ -63,6 +63,7 @@ spec:
                      - op: add
                        path: /spec/listeners/0/hostname
                        value: "inference-gateway.apps.SET_ME"
+                       # oc get ingresses.config/cluster -o jsonpath={.spec.domain}
                  - target:
                      group: gateway.networking.k8s.io
                      version: v1
@@ -73,6 +74,7 @@ spec:
                      - op: add
                        path: /spec/listeners/0/hostname
                        value: "infra-gateway.apps.SET_ME"
+                       # oc get ingresses.config/cluster -o jsonpath={.spec.domain}
          - target:
              kind: Application
              group: argoproj.io
