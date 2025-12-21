@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: llm-d-inference-scheduling
+  labels: {}
+  namespace: openshift-gitops
+spec:
+  project: default
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: experiment-01
+    name: ''
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        openshift.io/user-monitoring: "true"
+    syncOptions:
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+      - CreateNamespace=true
+    automated:
+      prune: true
+      # Allow changes after sync
+      selfHeal: false
+    retry:
+      limit: 8
+      backoff:
+        duration: 5s
+        maxDuration: 5m0s
+        factor: 2
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+        - /metadata/annotations
+        - /metadata/labels
+  sources:
+    - repoURL: registry.k8s.io/gateway-api-inference-extension/charts
+      targetRevision: v1.2.0-rc.1
+      chart: inferencepool
+      name: "gaie-workload-variant-autoscaler"
+      helm:
+        valuesObject: {}
+    - repoURL: https://llm-d-incubation.github.io/llm-d-modelservice/
+      chart: llm-d-modelservice
+      targetRevision: v0.3.10
+      name: "ms-workload-variant-autoscaler-llm-d-modelservice"
+      helm:
+        valuesObject: {}
+
+
