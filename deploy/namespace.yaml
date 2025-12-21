@@ -15,13 +15,6 @@ metadata:
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: experiment-01
-  labels:
-    openshift.io/user-monitoring: "true"
----
-kind: Namespace
-apiVersion: v1
-metadata:
   name: grafana
   labels:
     openshift.io/cluster-monitoring: "true"

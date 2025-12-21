@@ -5,6 +5,5 @@ resources:
 - gitops-cluster-admin.yaml
 - 99-loki-secret.yaml
 - 99-grafana-credentials-secret.yaml
-- 99-hftoken-secret.yaml
 - 99-ssh-key-secret.yaml
 - app-of-apps.yaml
