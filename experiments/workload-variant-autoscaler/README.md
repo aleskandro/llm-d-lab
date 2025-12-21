@@ -19,7 +19,7 @@ Multiple time-shifted GuideLLM instances apply a stair-step signal to the deploy
 ### Using the full setup
 1. Deploy a fresh cluster and only install the Openshift GitOps Operator (ArgoCD).
 2. Clone this repo or fork it if you need to make changes to the infra manifests.
-3. Deploy the Kustomize project in [llm-d-lab/deploy/](../../deploy/) to set up the cluster Day2 infra. Be sure to have some workers to host the initial configuration load. The GitOps project will also deploy MachineSets and autoscaling to add other nodes as needed.
+3. Deploy the Kustomize project in [llm-d-lab/overlays/aws](../../overlays/aws) to set up the cluster Day2 infra. Be sure to have some workers to host the initial configuration load. The GitOps project will also deploy MachineSets and autoscaling to add other nodes as needed.
 4. Wait until all the applications are healthy in ArgoCD.
 
 ### Other information for manual setups

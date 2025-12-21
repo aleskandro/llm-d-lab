@@ -34,15 +34,15 @@ Accelerate reproducible inference experiments for large language models with [LL
 ## ⚡ Quickstart on AWS
 
 1. Clone this repo.
-2. Fill the GitOps Root Application in `deploy/app-of-apps.yaml` (See [app-of-apps pattern](https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/)):
+2. Fill the GitOps Root Application in [overlays/aws/root-app.yaml](./overlays/aws/root-app.yaml) (See [app-of-apps pattern](https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/)):
    - The minimum required values are the ClusterApi identifier, region and available zones of the cluster, and the routes for the Gateway API. You can also fork and replace the repo URL with your own. This is recommended as using the main repo URL directly means binding your cluster to the current state of this repo. Further documentation is planned for customizations of the environments.
-3. Fill the secrets in `deploy/99-*.example.yaml` and save as `deploy/99-*.yaml`.
-4. Deploy via `oc apply -k deploy/`.
+3. Fill the secrets in `overlays/aws/99-*.example.yaml` and save as `overlays/aws/99-*.yaml`.
+4. Deploy via `oc apply -k overlays/aws/`.
 5. Wait for all the ArgoCD applications to become ready: you can find them in the Openshift WebUI or via `oc get applications -n openshift-gitops`.
 
 ## ⚡ Quickstart on IBMCloud
 
-To be documented.
+To be tested and documented.
 
 ---
 
