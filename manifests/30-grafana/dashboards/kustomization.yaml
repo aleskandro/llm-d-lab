@@ -13,3 +13,4 @@ resources:
   - ./standard-namespace-monitoring.yaml
   - ./vllm.yaml
   - ./workload-variant-autoscaler.yaml
+  - ./llmd-vllm-wva.yaml

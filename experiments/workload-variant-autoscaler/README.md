@@ -63,6 +63,12 @@ oc apply -k ./20-config
 
 Use the Tekton pipeline runs defined in [./30-experiment-runs](./30-experiment-runs).
 
+## Grafana Dashboard
+
+A grafana dashboard is provided in [/manifests/30-grafana/dashboards/llmd-vllm-wva.yaml](../../manifests/30-grafana/dashboards/llmd-vllm-wva.yaml) to monitor the autoscaling behavior.
+
+The Grafana dashboard should be already available if using the full setup.
+
 ## Jupyter notebook for data visualization
 
 The data are extracted from the Prometheus instance running in the cluster, managed by the Cluster Monitoring Operator.
