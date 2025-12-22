@@ -49,6 +49,7 @@ Accelerate reproducible inference experiments for large language models with [LL
 3. Fill in the secrets in `overlays/aws/99-*.example.yaml` and save as `overlays/aws/99-*.yaml`.
 4. Deploy with `oc apply -k overlays/aws/`.
 5. Wait for all ArgoCD applications to become ready: you can find them in the OpenShift WebUI or via `oc get applications -n openshift-gitops`.
+6. From here on any changes to the repo will be automatically applied to the cluster by ArgoCD, and ArgoCD will continuously ensure the cluster state matches the desired state defined in the Git repository.
 
 NOTE: The initial setup will take longer, especially if the cluster requires scaling out worker nodes. The applications will report progressing and degraded states until all dependencies are met and the cluster converges to the desired state.
 
