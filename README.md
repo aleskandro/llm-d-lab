@@ -96,12 +96,15 @@ Refer to [experiments/workload-variant-autoscaler](experiments/workload-variant-
 - [ ] Kuadrant configuration
 - [ ] Authorino configuration
 - [ ] Other Grafana dashboards
-- [ ] Grafana Authentication should be backed by Openshift OAuth
+- [ ] Pin artifacts (operators, helm charts, ...) to specific versions/commits for reproducibility and enable renovate bot
+- [ ] Grafana Authentication should be backed by OpenShift OAuth
 - [ ] Review RBACs, resource requests/limits, and other manifests refinements
 - [ ] Multi-tenancy and concurrent deployments and experiment jobs management, e.g., via Tekton Pipelines, Kueue, and other tools for workload orchestration
-- [ ] Most operators are configured in their simplest form and in the global manifests. Further tuning and customizations might be needed for specific use cases, e.g., for the configuration of the NVidia GPU Operator and networking. Such configuration will be unlocked from the global manifests and moved to dedicated environment overlays or experiments, given the assessment of the requiremeents to enable multi-tenancy and concurrent experiments on the same cluster (see previous point)
+- [ ] Most operators are configured in their simplest form and in the global manifests. Further tuning and customizations may be needed for specific use cases, e.g., configuring the NVIDIA GPU Operator and networking. Such a configuration will be unlocked from the global manifests and moved to dedicated environment overlays or experiments, given the assessment of the requirements to enable multi-tenancy and concurrent experiments on the same cluster (see previous point)
+- [ ] HyperShift hosted clusters support/Multi-Cluster management
 - [ ] More example workloads and experiments
 - [ ] Documentation
+
 
 ## 📁 Structure of the repo
 
