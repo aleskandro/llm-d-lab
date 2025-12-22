@@ -9,7 +9,7 @@ Accelerate reproducible inference experiments for large language models with [LL
 ---
 
 ## 👤 Who is this for?
-- 🛠️ Performance engineers running LLM-D & OpenShift AI experiments
+- 🛠️ Performance engineers running LLM-D & OpenShift AI benchmarks
 - 🏗️ Platform engineers & SREs building scalable LLM serving
 - 🧩 Solution architects prototyping LLM-backed solutions
 - 🧑‍🔬 Researchers validating distributed inference engines and orchestration strategies
@@ -28,10 +28,10 @@ Accelerate reproducible inference experiments for large language models with [LL
 ## 💡 Philosophy
 
 - 🔁 GitOps-first: Everything is managed via ArgoCD applications
-- 📄 Avoid local scripts execution: Prefer declarative manifests and Kubernetes control loops over imperative scripts to run locally
-- ⚡ Low friction and dependencies on the user's workstation tooling
-- 🧩 Modular & extensible: Fork Customize via Kustomize overlays
-- ☸️ Cloud-native: Leverage OpenShift operators & best practices
+- 📄 Avoid local script execution: Prefer declarative manifests and Kubernetes control loops over imperative scripts run locally
+- ⚡ Low friction and minimal dependencies on the user's workstation tooling
+- 🧩 Modular & extensible: Fork and Customize via Kustomize overlays
+- ☸️ Cloud-native: Leverage the full potential of Kubernetes, OpenShift, and the Operators pattern
 - 🔁 Reproducible: Version-controlled manifests for consistent setups
 - 🔬 Experiment-focused: Ready-to-run LLM-D workloads & experiments
 
@@ -45,10 +45,12 @@ Accelerate reproducible inference experiments for large language models with [LL
 
 1. Clone this repo.
 2. Fill the GitOps Root Application in [overlays/aws/root-app.yaml](./overlays/aws/root-app.yaml) (See [app-of-apps pattern](https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/)):
-   - The minimum required values are the ClusterApi identifier, region and available zones of the cluster, and the routes for the Gateway API. You can also fork and replace the repo URL with your own. This is recommended as using the main repo URL directly means binding your cluster to the current state of this repo. Further documentation is planned for customizations of the environments.
-3. Fill the secrets in `overlays/aws/99-*.example.yaml` and save as `overlays/aws/99-*.yaml`.
-4. Deploy via `oc apply -k overlays/aws/`.
-5. Wait for all the ArgoCD applications to become ready: you can find them in the Openshift WebUI or via `oc get applications -n openshift-gitops`.
+  - The minimum required values are the ClusterApi identifier, the cluster's region and available zones, and the routes for the Gateway API. You can also fork and replace the repo URL with your own. This is recommended because using the main repo URL directly binds your cluster to the current state of this repo. Further documentation is planned for customizing the environments.
+3. Fill in the secrets in `overlays/aws/99-*.example.yaml` and save as `overlays/aws/99-*.yaml`.
+4. Deploy with `oc apply -k overlays/aws/`.
+5. Wait for all ArgoCD applications to become ready: you can find them in the OpenShift WebUI or via `oc get applications -n openshift-gitops`.
+
+NOTE: The initial setup will take longer, especially if the cluster requires scaling out worker nodes. The applications will report progressing and degraded states until all dependencies are met and the cluster converges to the desired state.
 
 ## ⚡ Quickstart on IBMCloud
 
@@ -75,20 +77,21 @@ To be tested and documented.
 
 ## 🏃 Running Example Workloads
 
-The `examples/` folder contains example manifests and Helmfiles to deploy LLM-D workloads on top of the deployed platform.
+The `examples/` directory contains sample manifests and Helm charts intended for deploying LLM-D workloads.
 
 ## 🧪 Example experiment: Upstream LLM-D w/ Workload Variant Autoscaler
 
-See [experiments/workload-variant-autoscaler](experiments/workload-variant-autoscaler) for a complete example of deploying Upstream LLM-D with Workload Variant Autoscaling and collect some metrics for analysis.
+Refer to [experiments/workload-variant-autoscaler](experiments/workload-variant-autoscaler) for a full example of deploying Upstream LLM-D with Workload Variant Autoscaling and gathering metrics for analysis.
 
 ## ⚠️ Limitations and Notes
 
-- When deploying the full env in `env/lab`, MachineSets and Cluster Autoscaling are configured together with the operators installation. In case of SNO clusters, the master is configured to not host user workloads anymore, but the MachineSets and Cluster Autoscaler are still progressing. The cluster will eventually converge to the desired state, but it's suggested to have some worker nodes already available to speed up the initial setup and make it more reliable.
-- The uninstallation of this stack is not yet fully supported. For example, operators manged via OLM will not be removed automatically and manual clean-up might be needed. Still, as MachineSets and Cluster Autoscaler are removed, be sure to provision some worker nodes to allow the re-scheduling of the remaining workloads.
+- When deploying the complete env in `env/lab`, MachineSets and Cluster Autoscaling are configured alongside the operators' installation. In SNO clusters, the master is configured not to host user workloads, but the MachineSets and Cluster Autoscaler continue to progress. The cluster will eventually converge to the desired state, but it's recommended to have some worker nodes available in advance to speed up initial setup and improve reliability during this phase.
+- The uninstallation of this stack is not yet fully supported. For example, operators managed via OLM will not be removed automatically; manual cleanup may be required. Still, once MachineSets and Cluster Autoscaler are removed, ensure you provision some worker nodes to enable rescheduling of the remaining workloads.
 
 ## 📝 Backlog
 
 - [ ] Add IBMCloud overlay
+- [ ] RWX Storage Class
 - [ ] CertManager configuration
 - [ ] Kuadrant configuration
 - [ ] Authorino configuration
