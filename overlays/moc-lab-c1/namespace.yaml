@@ -1,0 +1,34 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: openshift-gitops
+  labels:
+    openshift.io/user-monitoring: "true"
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: debugging
+  labels:
+    openshift.io/user-monitoring: "true"
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: grafana
+  labels:
+    openshift.io/cluster-monitoring: "true"
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: netobserv
+  labels:
+    opoenshift.io/cluster-monitoring: "true"
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: helm-charts
+  labels:
+    openshift.io/cluster-monitoring: "true"

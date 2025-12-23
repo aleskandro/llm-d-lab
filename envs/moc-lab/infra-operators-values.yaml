@@ -1,0 +1,86 @@
+additionalCatalogSources: []
+
+cliImage: ghcr.io/helmfile/helmfile:v1.2.2
+namespace: openshift-marketplace
+
+# Operators to install
+operators:
+  - channel: stable-v1
+    name: openshift-cert-manager-operator
+    namespace: cert-manager-operator
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+  - channel: stable
+    name: nfd
+    namespace: openshift-nfd
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    targetNamespace: openshift-nfd
+  - channel: v25.3
+    name: gpu-operator-certified
+    namespace: nvidia-gpu-operator
+    source: certified-operators
+    sourceNamespace: openshift-marketplace
+    targetNamespace: nvidia-gpu-operator
+  - channel: stable-v1.0
+    name: leader-worker-set
+    namespace: openshift-lws-operator
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    targetNamespace: openshift-lws-operator
+  - channel: latest
+    consolePlugins:
+      - pipelines-console-plugin
+    name: openshift-pipelines-operator-rh # no -rh?
+    namespace: openshift-pipelines
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+  - channel: stable
+    name: sriov-network-operator
+    namespace: openshift-sriov-network-operator
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    targetNamespace: openshift-sriov-network-operator
+  - channel: stable
+    name: rhcl-operator
+    namespace: kuadrant-system
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+  - channel: stable
+    name: cluster-kube-descheduler-operator
+    namespace: openshift-kube-descheduler-operator
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    targetNamespace: openshift-kube-descheduler-operator
+  - channel: stable
+    name: openshift-custom-metrics-autoscaler-operator
+    namespace: openshift-keda
+    operatorName: openshift-custom-metrics-autoscaler-operator
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+  - channel: stable
+    name: netobserv-operator
+    namespace: openshift-netobserv-operator
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+  - channel: v5
+    name: grafana-operator
+    namespace: grafana-operator
+    source: community-operators
+    sourceNamespace: openshift-marketplace
+  - channel: stable-6.3
+    name: loki-operator
+    namespace: openshift-operators-redhat
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+  - channel: stable
+    name: multiarch-tuning-operator
+    namespace: openshift-multiarch-tuning-operator
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+  - channel: stable
+    name: aws-efs-csi-driver-operator
+    namespace: openshift-cluster-csi-drivers
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+# TODO: Add Kueue
