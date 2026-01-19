@@ -13,6 +13,7 @@ spec:
     path: manifests/30-netobserv
     repoURL: https://github.com/aleskandro/llm-d-lab.git
     targetRevision: master
+    kustomization: {}
   sources: []
   project: default
   syncPolicy:
