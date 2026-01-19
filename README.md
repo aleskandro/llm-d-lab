@@ -40,6 +40,7 @@ Accelerate reproducible inference experiments for large language models with [LL
 ## 🛠️ Cluster Prerequisites
 - OpenShift 4.20+
 - Cluster-admin permissions
+- Openshift GitOps Operator installed (ArgoCD)
 
 ## ⚡ Quickstart on AWS
 
@@ -55,7 +56,17 @@ NOTE: The initial setup will take longer, especially if the cluster requires sca
 
 ## ⚡ Quickstart on IBMCloud
 
-To be tested and documented.
+1. Clone this repo.
+2. Fill the GitOps Root Application in [overlays/ibmcloud/root-app.yaml](./overlays/aws/root-app.yaml) (See [app-of-apps pattern](https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/)):
+- The minimum required values are the ClusterApi identifier, the cluster's region and available zones, and the routes for the Gateway API. You can also fork and replace the repo URL with your own. This is recommended because using the main repo URL directly binds your cluster to the current state of this repo. Further documentation is planned for customizing the environments.
+3. Fill in the secrets in `overlays/ibmcloud/99-*.example.yaml` and save as `overlays/ibmcloud/99-*.yaml`.
+4. Deploy with `oc apply -k overlays/ibmcloud/`.
+5. Wait for all ArgoCD applications to become ready: you can find them in the OpenShift WebUI or via `oc get applications -n openshift-gitops`.
+6. From here on any changes to the repo will be automatically applied to the cluster by ArgoCD, and ArgoCD will continuously ensure the cluster state matches the desired state defined in the Git repository.
+
+NOTE: The initial setup will take longer, especially if the cluster requires scaling out worker nodes. The applications will report progressing and degraded states until all dependencies are met and the cluster converges to the desired state.
+
+
 
 ---
 

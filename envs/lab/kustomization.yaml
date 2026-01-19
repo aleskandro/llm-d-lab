@@ -3,7 +3,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 namespace: openshift-gitops
 resources:
   - namespace.yaml
-  - ../../apps/01-infra-ocp-aws
+  - ../../apps/01-infra-ocp
   - ../../apps/20-operators
   - ../../apps/25-descheduler
   - ../../apps/25-dns
@@ -19,3 +19,18 @@ resources:
   - ../../apps/50-pipelines
   - ../../apps/60-llm-d-upstream-pre
   - ../../apps/80-ops
+
+patches:
+  - target:
+      kind: Application
+      name: infra-ocp
+    patch: |-
+      apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      metadata:
+        name: infra-ocp
+      spec:
+        source:
+          helm:
+            valueFiles:
+              - ../../envs/lab/infra-ocp-aws-values.yaml

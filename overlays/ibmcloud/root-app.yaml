@@ -16,6 +16,15 @@ spec:
     targetRevision: master
     kustomize:
        patches:
+         - target:
+             kind: Application
+             group: argoproj.io
+             version: v1alpha1
+             name: infra-ocp
+           patch: |-
+             - op: replace
+               path: /spec/source/helm/valueFiles/0
+               value: ../../envs/lab/infra-ocp-ibmcloud-values.yaml
          # Patch to change repoURL for all Applications with the llm-d-lab label
          - target:
              kind: Application
@@ -37,12 +46,9 @@ spec:
                value:
                  # Retrieve the cluster-api-cluster value with:
                  # oc -n openshift-machine-api get machinesets -o jsonpath='{.items[0].metadata.labels.machine\.openshift\.io/cluster-api-cluster}{"\n"}'
-                 clusterApiCluster: SET_ME
-                 region: us-east-1
-                 zones: ["a", "b", "c"]
-                 amis: 
-                   arm64: ami-08e3890b24e081680 
-                   amd64: ami-01095d1967818437c
+                 clusterApiCluster: SET_ME_CLUSTER_NAME_HERE
+                 region: eu-de
+                 zones: ["1", "2", "3"]
          - target:
              kind: Application
              group: argoproj.io
@@ -63,7 +69,7 @@ spec:
                      - op: add
                        path: /spec/listeners/0/hostname
                        # oc get ingresses.config/cluster -o jsonpath={.spec.domain}
-                       value: "inference-gateway.apps.SET_ME"
+                       value: "inference-gateway.apps.SET_ME_DOMAIN_HERE"
                  - target:
                      group: gateway.networking.k8s.io
                      version: v1
@@ -74,7 +80,7 @@ spec:
                      - op: add
                        path: /spec/listeners/0/hostname
                        # oc get ingresses.config/cluster -o jsonpath={.spec.domain}
-                       value: "infra-gateway.apps.SET_ME"
+                       value: "infra-gateway.apps.SET_ME_DOMAIN_HERE"
          - target:
              kind: Application
              group: argoproj.io

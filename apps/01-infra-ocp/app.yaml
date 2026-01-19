@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: infra-ocp-aws
+  name: infra-ocp
   labels:
     app.kubernetes.io/managed-by: llm-d-lab
 spec:
