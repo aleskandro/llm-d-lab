@@ -13,7 +13,7 @@ machinesets:
     minReplicas: 1
     maxReplicas: 3
     replicas: 0
-    instanceType: gx2-80x1280x8a100
+    instanceType: gx3d-160x1792x8h200
     architecture: "amd64"
     taints:
       - key: benchmark.llm-d.ai/test-gpu-amd64
