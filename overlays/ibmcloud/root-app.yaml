@@ -85,7 +85,7 @@ spec:
              kind: Application
              group: argoproj.io
              version: v1alpha1
-             name: loki-stack
+             name: netobserv
            patch: |-
              - op: replace
                path: /spec/source/kustomize
