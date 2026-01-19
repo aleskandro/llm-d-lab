@@ -99,7 +99,7 @@ spec:
                    patch: |-
                      - op: replace
                        path: /spec/storageClassName
-                       value: gp3-csi
+                       value: ibmc-vpc-block-10iops-tier
   sources: []
   project: default
   syncPolicy:
