@@ -50,7 +50,142 @@ machinesets:
       capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/infra-amd64=true"
     nodeLabels:
       benchmark.llm-d.ai/infra-amd64: "true"
-
+  - name: test-gpu-2-l40s
+    autoscaler: false
+    minReplicas: 1
+    maxReplicas: 3
+    replicas: 0
+    instanceType: gx3-48x240x2l40s
+    architecture: "amd64"
+    taints:
+      - key: benchmark.llm-d.ai/test-gpu-amd64
+        effect: NoSchedule
+    annotations:
+      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-count: "2"
+      capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
+    nodeLabels:
+      benchmark.llm-d.ai/test-gpu-amd64: "true"
+  - name: test-gpu-1-l40s
+    autoscaler: false
+    minReplicas: 1
+    maxReplicas: 3
+    replicas: 0
+    instanceType: gx3-24x120x1l40s
+    architecture: "amd64"
+    taints:
+      - key: benchmark.llm-d.ai/test-gpu-amd64
+        effect: NoSchedule
+    annotations:
+      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-count: "2"
+      capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
+    nodeLabels:
+      benchmark.llm-d.ai/test-gpu-amd64: "true"
+  - name: test-gpu-1-a100p
+    autoscaler: false
+    minReplicas: 1
+    maxReplicas: 3
+    replicas: 0
+    instanceType: gx3d-24x120x1a100p
+    architecture: "amd64"
+    taints:
+      - key: benchmark.llm-d.ai/test-gpu-amd64
+        effect: NoSchedule
+    annotations:
+      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-count: "2"
+      capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
+    nodeLabels:
+      benchmark.llm-d.ai/test-gpu-amd64: "true"
+  - name: test-gpu-2-a100p
+    autoscaler: false
+    minReplicas: 1
+    maxReplicas: 3
+    replicas: 0
+    instanceType: gx3d-48x240x2a100p
+    architecture: "amd64"
+    taints:
+      - key: benchmark.llm-d.ai/test-gpu-amd64
+        effect: NoSchedule
+    annotations:
+      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-count: "2"
+      capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
+    nodeLabels:
+      benchmark.llm-d.ai/test-gpu-amd64: "true"
+  - name: test-gpu-8-h100
+    autoscaler: false
+    minReplicas: 1
+    maxReplicas: 3
+    replicas: 0
+    instanceType: gx3d-160x1792x8h100
+    architecture: "amd64"
+    taints:
+      - key: benchmark.llm-d.ai/test-gpu-amd64
+        effect: NoSchedule
+    annotations:
+      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-count: "2"
+      capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
+    nodeLabels:
+      benchmark.llm-d.ai/test-gpu-amd64: "true"
+  - name: test-gpu-8-h200
+    autoscaler: false
+    minReplicas: 1
+    maxReplicas: 3
+    replicas: 0
+    instanceType: gx3d-160x1792x8h200
+    architecture: "amd64"
+    taints:
+      - key: benchmark.llm-d.ai/test-gpu-amd64
+        effect: NoSchedule
+    annotations:
+      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-count: "2"
+      capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
+    nodeLabels:
+      benchmark.llm-d.ai/test-gpu-amd64: "true"
+  - name: test-gpu-8-gaudi3
+    autoscaler: false
+    minReplicas: 1
+    maxReplicas: 3
+    replicas: 0
+    instanceType: gx3d-160x1792x8gaudi3
+    architecture: "amd64"
+    taints:
+      - key: benchmark.llm-d.ai/test-gpu-amd64
+        effect: NoSchedule
+    annotations:
+      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-count: "2"
+      capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
+    nodeLabels:
+      benchmark.llm-d.ai/test-gpu-amd64: "true"
+  - name: test-gpu-8-mi300x
+    autoscaler: false
+    minReplicas: 1
+    maxReplicas: 3
+    replicas: 0
+    instanceType: gx3d-208x1792x8mi300x
+    architecture: "amd64"
+    taints:
+      - key: benchmark.llm-d.ai/test-gpu-amd64
+        effect: NoSchedule
+    annotations:
+      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
+      capacity.cluster-autoscaler.kubernetes.io/gpu-count: "2"
+      capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
+    nodeLabels:
+      benchmark.llm-d.ai/test-gpu-amd64: "true"
 # Cluster autoscaler settings
 autoscaler:
   enableScaleDown: true
