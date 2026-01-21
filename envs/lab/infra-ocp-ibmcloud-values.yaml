@@ -8,23 +8,6 @@ ibmCloud:
   resourceGroup: "Default"
 
 machinesets:
-  - name: test-gpu
-    autoscaler: false
-    minReplicas: 1
-    maxReplicas: 3
-    replicas: 0
-    instanceType: gx3d-160x1792x8h200
-    architecture: "amd64"
-    taints:
-      - key: benchmark.llm-d.ai/test-gpu-amd64
-        effect: NoSchedule
-    annotations:
-      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/test-gpu-amd64=true"
-      capacity.cluster-autoscaler.kubernetes.io/gpu-type: "nvidia.com/gpu"
-      capacity.cluster-autoscaler.kubernetes.io/gpu-count: "2"
-      capacity.cluster-autoscaler.kubernetes.io/dra-driver: "gpu.nvidia.com"
-    nodeLabels:
-      benchmark.llm-d.ai/test-gpu-amd64: "true"
   - name: test-cpu-amd64
     autoscaler: false # autoscale from zero is not supported for IBM Cloud
     minReplicas: 1
