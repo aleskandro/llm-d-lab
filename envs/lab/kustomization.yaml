@@ -15,9 +15,7 @@ resources:
   - ../../apps/30-lws
   - ../../apps/30-netobserv
   - ../../apps/30-user-monitoring
-  - ../../apps/40-gateway-api
   - ../../apps/50-pipelines
-  - ../../apps/60-llm-d-upstream-pre
   - ../../apps/80-ops
 
 patches:
