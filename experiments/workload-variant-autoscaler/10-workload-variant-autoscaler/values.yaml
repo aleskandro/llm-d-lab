@@ -1,9 +1,11 @@
 wva:
   enabled: true
+  namespaceScoped: false
+  poolGroup: "inference.networking.k8s.io"
 
   image:
-    repository: ghcr.io/llm-d-incubation/workload-variant-autoscaler
-    tag: v0.4.1
+    repository: ghcr.io/llm-d/llm-d-workload-variant-autoscaler
+    tag: v0.5.1
   imagePullPolicy: Always
 
   metrics:

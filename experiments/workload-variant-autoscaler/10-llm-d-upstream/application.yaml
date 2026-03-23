@@ -37,14 +37,14 @@ spec:
         - /metadata/labels
   sources:
     - repoURL: registry.k8s.io/gateway-api-inference-extension/charts
-      targetRevision: v1.2.0-rc.1
+      targetRevision: v1.3.1
       chart: inferencepool
       name: "gaie-workload-variant-autoscaler"
       helm:
         valuesObject: {}
     - repoURL: https://llm-d-incubation.github.io/llm-d-modelservice/
       chart: llm-d-modelservice
-      targetRevision: v0.3.10
+      targetRevision: v0.4.8
       name: "ms-workload-variant-autoscaler-llm-d-modelservice"
       helm:
         valuesObject: {}

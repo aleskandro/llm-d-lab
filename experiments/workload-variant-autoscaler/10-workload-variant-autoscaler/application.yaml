@@ -32,8 +32,8 @@ spec:
       jsonPointers:
         - /imagePullSecrets
   sources:
-    - repoURL: ghcr.io/llm-d-incubation/workload-variant-autoscaler
-      targetRevision: "~0.4.0"
+    - repoURL: ghcr.io/llm-d
+      targetRevision: "0.5.1"
       chart: workload-variant-autoscaler
       name: "workload-variant-autoscaler"
       helm:

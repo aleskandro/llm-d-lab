@@ -6,7 +6,7 @@ metadata:
 spec:
   params:
     - name: target-url
-      value: 'http://openshift-ai-inference-openshift-ai-inference.openshift-ingress.svc.cluster.local'
+      value: 'http://inference-gateway.apps.YOUR-CLUSTER-DOMAIN-HERE'
     - name: model
       value: meta-llama/Llama-3.1-8B
     - name: reset-llm-d
@@ -64,14 +64,14 @@ spec:
                       periodSeconds: 15
           triggers:
             - type: prometheus
-              name: inferno-desired-replicas
+              name: wva-desired-replicas
 
               authenticationRef:
                 name: keda-trigger-auth-prometheus
               metadata:
                 serverAddress: 'https://thanos-querier.openshift-monitoring.svc.cluster.local:9091'
                 query: |
-                  inferno_desired_replicas{
+                  wva_desired_replicas{
                     variant_name='llm-d-inference-scheduling-llm-d-modelservice-decode',
                     exported_namespace='experiment-01'
                   }

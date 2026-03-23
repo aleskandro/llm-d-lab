@@ -9,6 +9,9 @@ metadata:
     inference.optimization/acceleratorName: L40S
 # This is essentially static input to the optimizer
 spec:
+  scaleTargetRef:
+   kind: Deployment
+   name: llm-d-inference-scheduling-llm-d-modelservice-decode
   # OpenAI API compatible name of the model
   modelID: meta-llama/Llama-3.1-8B
   variantCost: "10"
