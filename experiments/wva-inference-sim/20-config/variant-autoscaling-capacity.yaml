@@ -1,0 +1,13 @@
+apiVersion: llmd.ai/v1alpha1
+kind: VariantAutoscaling
+metadata:
+  name: inference-sim-decode
+  namespace: experiment-02
+  labels:
+    inference.optimization/acceleratorName: simulated
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: inference-sim-decode
+  modelID: meta-llama/Llama-3.1-8B
+  variantCost: "10"

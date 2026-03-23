@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inference-sim-config
+  namespace: experiment-02
+data:
+  config.yaml: |
+    model: "sim/Llama-3.1-8B"
+    served-model-name:
+      - "meta-llama/Llama-3.1-8B"
+    port: 8000
+
+    latency-calculator: "per-token"
+    prefill-overhead: "50ms"
+    prefill-time-per-token: "0.15ms"
+    inter-token-latency: "30ms"
+    inter-token-latency-std-dev: "5ms"
+    time-factor-under-load: 1.5
+
+    max-num-seqs: 64
+    max-model-len: 4096
+    max-waiting-queue-length: 10000
+
+    enable-kvcache: true
+    enable-prefix-caching: true
+    kv-cache-size: 4096
+    block-size: 16
