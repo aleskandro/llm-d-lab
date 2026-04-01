@@ -5,8 +5,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly
 
-from analysis.plotting.combine import figures_to_single_row
-from analysis.utils.utils import step_to_xperiod, hex_with_opacity
+from plotting.combine import figures_to_single_row
+from utils.utils import step_to_xperiod, hex_with_opacity
 
 def candlestick_over_time_with_scaling(
         df: pd.DataFrame,

@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly
 
-from analysis.utils.utils import hex_with_opacity
+from utils.utils import hex_with_opacity
 
 def violin_plot_by_run(
         df: pd.DataFrame,

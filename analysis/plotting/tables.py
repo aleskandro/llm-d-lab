@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import cm, colors
 
-from analysis.utils.utils import luminance
+from utils.utils import luminance
 
 def clear_bg_for_na(df, cols):
     return [
