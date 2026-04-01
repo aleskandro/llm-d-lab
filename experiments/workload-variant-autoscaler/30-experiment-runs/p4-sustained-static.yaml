@@ -1,14 +1,14 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: autoscaling-test-more-replica-
+  generateName: p4-sustained-static-
   namespace: experiment-01
 spec:
   params:
     - name: target-url
-      value: 'http://inference-gateway.apps.YOUR-CLUSTER-DOMAIN-HERE'
+      value: 'http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local'
     - name: model
-      value: meta-llama/Llama-3.1-8B
+      value: Qwen/Qwen3-32B-AWQ
     - name: reset-llm-d
       value: 'true'
     - name: namespace
@@ -18,9 +18,23 @@ spec:
     - name: scaled-object
       value: ""
     - name: initial-replicas
-      value: "12"
+      value: "4"
+    # P-4: Sustained Near-Peak — 2.0 req/s constant for 60 min
+    - name: load-steps
+      value:
+        - |
+          name: sustained
+          delay: 0
+          duration: 3600
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 2.0
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
   pipelineRef:
-    name: wva-incremental-stepped-load-test
+    name: wva-load-test
   taskRunTemplate:
     podTemplate:
       affinity:

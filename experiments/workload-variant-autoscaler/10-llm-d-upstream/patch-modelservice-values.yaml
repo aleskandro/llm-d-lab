@@ -3,10 +3,10 @@
   path: /spec/sources/1/helm/valuesObject
   value:
     modelArtifacts:
-      uri: "hf://meta-llama/Llama-3.1-8B"
+      uri: "hf://Qwen/Qwen3-32B-AWQ"
       size: 32Gi
       authSecretName: "llm-d-hf-token"
-      name: "meta-llama/Llama-3.1-8B"
+      name: "Qwen/Qwen3-32B-AWQ"
 
     decode:
       monitoring:

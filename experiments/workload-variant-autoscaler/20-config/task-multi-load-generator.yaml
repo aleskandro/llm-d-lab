@@ -1,0 +1,135 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: guidellm-load-step
+  namespace: experiment-01
+spec:
+  description: |
+    Run a single GuideLLM load step.  Receives a YAML config string with
+    name, delay, duration, and scenario.  Designed to be called via
+    matrix.params so that each array element gets its own pod.
+  params:
+    - name: step-config
+      type: string
+      description: |
+        YAML object defining one load step:
+          name: <string>
+          delay: <seconds>
+          duration: <seconds>
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+    - name: target-url
+      type: string
+    - name: model
+      type: string
+    - name: hf-secret-name
+      type: string
+      default: "huggingface-secret"
+    - name: basepath
+      type: string
+      default: ""
+    - name: test-name
+      type: string
+      default: "guidellm-benchmark"
+  workspaces:
+    - name: results
+      description: Workspace to store benchmark results and logs
+  steps:
+    - name: label-pod
+      image: ghcr.io/helmfile/helmfile:v1.2.2
+      computeResources:
+        requests: { memory: "32Mi", cpu: "10m" }
+        limits:   { memory: "64Mi" }
+      script: |
+        #!/bin/bash
+        set -ex
+        NS=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+        kubectl label pod "$HOSTNAME" \
+          benchmark-running=true \
+          benchmark-test-name="$(params.test-name)" \
+          -n "$NS" --overwrite
+
+    - name: run-benchmark
+      image: ghcr.io/vllm-project/guidellm:latest
+      imagePullPolicy: IfNotPresent
+      computeResources:
+        requests: { memory: "128Mi", cpu: "1" }
+      env:
+        - name: HF_HOME
+          value: "/tmp"
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.hf-secret-name)
+              key: token
+              optional: true
+      script: |
+        #!/usr/bin/env python3
+        """Run a single GuideLLM load step parsed from a YAML config."""
+
+        import os, shutil, subprocess, sys, textwrap, time, uuid
+        from datetime import datetime, timezone
+        from pathlib import Path
+
+        import yaml
+
+        config = yaml.safe_load(textwrap.dedent(r"""$(params.step-config)"""))
+
+        name     = config["name"]
+        delay    = int(config.get("delay", 0))
+        duration = int(config["duration"])
+        scenario = config.get("scenario", "")
+
+        TARGET_URL = "$(params.target-url)"
+        MODEL      = "$(params.model)"
+        BASE_PATH  = "$(params.basepath)" or "results"
+        WORKSPACE  = "$(workspaces.results.path)"
+
+        print(f"=== Load step: {name} ===")
+        print(f"  delay={delay}s  duration={duration}s")
+
+        if delay > 0:
+            print(f"Sleeping {delay}s before starting...")
+            time.sleep(delay)
+
+        scenario_file = Path("/tmp/scenario.yaml")
+        scenario_file.write_text(scenario)
+
+        ts  = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        uid = uuid.uuid4().hex[:8]
+        results_root = Path(WORKSPACE) / BASE_PATH
+        out_dir = results_root / f"benchmark-{ts}-{uid}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        out_json   = Path("/tmp/benchmarks.json")
+        log_file   = out_dir / f"benchmark-{name}-log.txt"
+        final_json = out_dir / f"benchmark-{name}.json"
+
+        cmd = [
+            "/opt/app-root/bin/guidellm", "benchmark",
+            "--scenario", str(scenario_file),
+            "--target",      TARGET_URL,
+            "--model",       MODEL,
+            "--max-seconds", str(duration),
+            "--output-path", str(out_json),
+            "--disable-progress",
+        ]
+
+        print(f"Command: {' '.join(cmd)}")
+        with open(log_file, "w") as lf:
+            rc = subprocess.call(cmd, stdout=lf, stderr=subprocess.STDOUT)
+
+        if out_json.exists():
+            shutil.move(str(out_json), str(final_json))
+            print(f"Report: {final_json}")
+        else:
+            print("WARNING: no JSON output produced")
+
+        print(f"Log:    {log_file}")
+        print(f"Exit:   {rc}")
+        sys.exit(rc)

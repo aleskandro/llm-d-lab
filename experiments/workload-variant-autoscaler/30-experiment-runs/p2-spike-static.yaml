@@ -1,26 +1,51 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: sim-autoscaling-test-multiple-replica-
-  namespace: experiment-02
+  generateName: p2-spike-static-
+  namespace: experiment-01
 spec:
   params:
     - name: target-url
       value: 'http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local'
     - name: model
-      value: meta-llama/Llama-3.1-8B
+      value: Qwen/Qwen3-32B-AWQ
     - name: reset-llm-d
       value: 'true'
     - name: namespace
-      value: experiment-02
+      value: experiment-01
     - name: test-name
-      value: sim-replicas-4
+      value: replicas-6
     - name: scaled-object
       value: ""
     - name: initial-replicas
-      value: "4"
+      value: "6"
+    # P-2: Sudden Spike — 0.5 req/s baseline, then 3x at t=15 min
+    - name: load-steps
+      value:
+        - |
+          name: baseline
+          delay: 0
+          duration: 1800
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: burst
+          delay: 600
+          duration: 600
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 1.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
   pipelineRef:
-    name: wva-sim-incremental-stepped-load-test
+    name: wva-load-test
   taskRunTemplate:
     podTemplate:
       affinity:
@@ -47,5 +72,5 @@ spec:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 1Gi
+              storage: 32Gi
         status: {}

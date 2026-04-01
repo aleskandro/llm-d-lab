@@ -57,7 +57,7 @@ wva:
 llmd:
   namespace: experiment-01
   modelName: ms-inference-scheduling-llm-d-modelservice
-  modelID: "meta-llama/Llama-3.1-8B"
+  modelID: "Qwen/Qwen3-32B-AWQ"
 
 
 va:

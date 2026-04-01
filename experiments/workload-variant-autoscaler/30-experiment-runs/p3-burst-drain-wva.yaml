@@ -1,14 +1,14 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: autoscaling-test-wva-
+  generateName: p3-burst-drain-wva-
   namespace: experiment-01
 spec:
   params:
     - name: target-url
-      value: 'http://inference-gateway.apps.YOUR-CLUSTER-DOMAIN-HERE'
+      value: 'http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local'
     - name: model
-      value: meta-llama/Llama-3.1-8B
+      value: Qwen/Qwen3-32B-AWQ
     - name: reset-llm-d
       value: 'true'
     - name: namespace
@@ -34,7 +34,7 @@ spec:
           cooldownPeriod: 30
           initialCooldownPeriod: 30
           minReplicaCount: 1  
-          maxReplicaCount: 12
+          maxReplicaCount: 4
           fallback:
             failureThreshold: 3   
             replicas: 1     
@@ -80,8 +80,44 @@ spec:
                 metricType: 'AverageValue'
                 authModes: 'bearer'
                 unsafeSsl: 'true'
+    # P-3: Burst/Drain — 3 × 10-min bursts at 3.0 req/s, 10-min gaps
+    - name: load-steps
+      value:
+        - |
+          name: burst-1
+          delay: 0
+          duration: 600
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 3.0
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: burst-2
+          delay: 1200
+          duration: 600
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 3.0
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: burst-3
+          delay: 2400
+          duration: 600
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 3.0
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
   pipelineRef:
-    name: wva-incremental-stepped-load-test
+    name: wva-load-test
   taskRunTemplate:
     podTemplate:
       affinity:

@@ -26,6 +26,7 @@
         # Development security configuration (relaxed for easier development)
         tls:
           insecureSkipVerify: true
+        # oc get configmap serving-certs-ca-bundle -n openshift-monitoring -o jsonpath='{.data.service-ca\.crt}
         caCert: |-
           ### SET ME ###
 
@@ -60,7 +61,7 @@
     llmd:
       namespace: experiment-01
       modelName: llm-d-inference-scheduling-llm-d-modelservice
-      modelID: "meta-llama/Llama-3.1-8B"
+      modelID: "Qwen/Qwen3-32B-AWQ"
 
 
     va:

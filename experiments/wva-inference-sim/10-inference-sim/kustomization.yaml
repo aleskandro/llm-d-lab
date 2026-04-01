@@ -6,7 +6,6 @@ resources:
   - 99-secret.yaml
   - gateway.yaml
   - httproute.yaml
-  - route.yaml
   - simulator-rbac.yaml
   - simulator-config.yaml
   - simulator-deployment.yaml

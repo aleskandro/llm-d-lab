@@ -6,7 +6,7 @@ metadata:
 spec:
   params:
     - name: target-url
-      value: 'http://inference-sim-gateway.apps.YOUR-CLUSTER-DOMAIN-HERE'
+      value: 'http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local'
     - name: model
       value: meta-llama/Llama-3.1-8B
     - name: reset-llm-d

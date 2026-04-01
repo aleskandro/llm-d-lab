@@ -1,0 +1,170 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: p1-rampup-wva-
+  namespace: experiment-01
+spec:
+  params:
+    - name: target-url
+      value: 'http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local'
+    - name: model
+      value: Qwen/Qwen3-32B-AWQ
+    - name: reset-llm-d
+      value: 'true'
+    - name: namespace
+      value: experiment-01
+    - name: test-name
+      value: WVA
+    - name: scaled-object
+      value: |
+        apiVersion: keda.sh/v1alpha1
+        kind: ScaledObject
+        metadata:
+          name: vllme-deployment-scaler
+          namespace: experiment-01
+          labels:
+            app: vllme-deployment
+            scaler: keda-workload-variant-autoscaler
+        spec:
+          scaleTargetRef:
+            apiVersion: apps/v1                 
+            kind: Deployment                   
+            name: llm-d-inference-scheduling-llm-d-modelservice-decode
+          pollingInterval: 10  
+          cooldownPeriod: 30
+          initialCooldownPeriod: 30
+          minReplicaCount: 1  
+          maxReplicaCount: 8
+          fallback:
+            failureThreshold: 3   
+            replicas: 1     
+            behavior: 'currentReplicasIfHigher'
+          advanced:
+            restoreToOriginalReplicaCount: false
+            horizontalPodAutoscalerConfig:
+              name: llm-d-inference-scheduling-llm-d-modelservice-decode-hpa
+              behavior:
+                scaleDown:
+                  stabilizationWindowSeconds: 60
+                  policies:
+                    - type: Percent
+                      value: 100         
+                      periodSeconds: 30  
+                    - type: Pods
+                      value: 1      
+                      periodSeconds: 15
+                scaleUp:
+                  stabilizationWindowSeconds: 0
+                  policies:
+                    - type: Percent
+                      value: 100          
+                      periodSeconds: 30   
+                    - type: Pods
+                      value: 1          
+                      periodSeconds: 15
+          triggers:
+            - type: prometheus
+              name: wva-desired-replicas
+
+              authenticationRef:
+                name: keda-trigger-auth-prometheus
+              metadata:
+                serverAddress: 'https://thanos-querier.openshift-monitoring.svc.cluster.local:9091'
+                query: |
+                  wva_desired_replicas{
+                    variant_name='llm-d-inference-scheduling-llm-d-modelservice-decode',
+                    exported_namespace='experiment-01'
+                  }
+                threshold: '1'
+                activationThreshold: '0'
+                metricType: 'AverageValue'
+                authModes: 'bearer'
+                unsafeSsl: 'true'
+    # P-1: Gradual Ramp-up — 5 steps at 0.5 req/s, staggered 10 min apart
+    - name: load-steps
+      value:
+        - |
+          name: step-1
+          delay: 0
+          duration: 3600
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: step-2
+          delay: 600
+          duration: 3000
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: step-3
+          delay: 1200
+          duration: 2400
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: step-4
+          delay: 1800
+          duration: 1800
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: step-5
+          delay: 2400
+          duration: 1200
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+  pipelineRef:
+    name: wva-load-test
+  taskRunTemplate:
+    podTemplate:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+    serviceAccountName: pipeline
+  timeouts:
+    finally: 1h0m0s
+    pipeline: 12h0m0s
+    tasks: 4h0m0s
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        metadata:
+          creationTimestamp: null
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 32Gi
+        status: {}

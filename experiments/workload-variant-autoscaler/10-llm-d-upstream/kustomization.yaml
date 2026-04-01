@@ -5,7 +5,6 @@ resources:
   - namespace.yaml
   - gateway.yaml
   - httproute.yaml
-  - route.yaml
   - pvc.yaml
   - application.yaml
   - 99-secret.yaml

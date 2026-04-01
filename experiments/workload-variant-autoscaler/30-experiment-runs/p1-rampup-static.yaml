@@ -1,0 +1,109 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: p1-rampup-static-
+  namespace: experiment-01
+spec:
+  params:
+    - name: target-url
+      value: 'http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local'
+    - name: model
+      value: Qwen/Qwen3-32B-AWQ
+    - name: reset-llm-d
+      value: 'true'
+    - name: namespace
+      value: experiment-01
+    - name: test-name
+      value: replicas-8
+    - name: scaled-object
+      value: ""
+    - name: initial-replicas
+      value: "8"
+    # P-1: Gradual Ramp-up — 5 steps at 0.5 req/s, staggered 10 min apart
+    - name: load-steps
+      value:
+        - |
+          name: step-1
+          delay: 0
+          duration: 3600
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: step-2
+          delay: 600
+          duration: 3000
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: step-3
+          delay: 1200
+          duration: 2400
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: step-4
+          delay: 1800
+          duration: 1800
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - |
+          name: step-5
+          delay: 2400
+          duration: 1200
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+  pipelineRef:
+    name: wva-load-test
+  taskRunTemplate:
+    podTemplate:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+    serviceAccountName: pipeline
+  timeouts:
+    finally: 1h0m0s
+    pipeline: 12h0m0s
+    tasks: 4h0m0s
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        metadata:
+          creationTimestamp: null
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 32Gi
+        status: {}
