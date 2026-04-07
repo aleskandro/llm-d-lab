@@ -30,7 +30,7 @@
             - '--dtype'
             - 'bfloat16'
             - "--disable-uvicorn-access-log"
-          image: ghcr.io/llm-d/llm-d-cuda:v0.3.1
+          image: ghcr.io/llm-d/llm-d-cuda:v0.5.1
           env:
             - name: CUDA_VISIBLE_DEVICES
               value: "0"
