@@ -19,28 +19,28 @@ spec:
       value: ""
     - name: initial-replicas
       value: "6"
-    # P-2: Sudden Spike — 0.5 req/s baseline, then 3x at t=15 min
+    # P-2: Sudden Spike — 0.1 req/s baseline, then 10x at t=15 min
     - name: load-steps
       value:
         - |
           name: baseline
           delay: 0
-          duration: 1800
+          duration: 2100
           scenario: |
             request_type: text_completions
             profile: constant
-            rate: 0.5
+            rate: 0.1
             data:
               prompt_tokens: 1024
               output_tokens: 1024
         - |
           name: burst
-          delay: 600
+          delay: 900
           duration: 600
           scenario: |
             request_type: text_completions
             profile: constant
-            rate: 1.5
+            rate: 1.0
             data:
               prompt_tokens: 1024
               output_tokens: 1024
