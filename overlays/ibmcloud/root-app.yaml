@@ -12,7 +12,7 @@ spec:
     server: 'https://kubernetes.default.svc'
   source:
     path: envs/lab
-    repoURL: https://github.com/avasilevskii/llm-d-lab.git
+    repoURL: https://github.com/aleskandro/llm-d-lab.git
     targetRevision: master
     kustomize:
        patches:
@@ -34,7 +34,7 @@ spec:
            patch: |-
              - op: replace
                path: /spec/source/repoURL
-               value: https://github.com/avasilevskii/llm-d-lab.git
+               value: https://github.com/aleskandro/llm-d-lab.git
          - target:
              kind: Application
              group: argoproj.io
