@@ -12,6 +12,7 @@ resources:
   - ../../apps/30-cert-manager
   - ../../apps/30-gpu-operator-nfd
   - ../../apps/30-grafana
+  - ../../apps/30-local-storage
   - ../../apps/30-lws
   - ../../apps/30-netobserv
   - ../../apps/30-user-monitoring
