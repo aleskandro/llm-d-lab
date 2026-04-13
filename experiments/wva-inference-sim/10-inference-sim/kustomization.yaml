@@ -1,0 +1,21 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+resources:
+  - https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd/?ref=v1.0.0
+  - namespace.yaml
+  - 99-secret.yaml
+  - gateway.yaml
+  - httproute.yaml
+  - simulator-rbac.yaml
+  - simulator-config.yaml
+  - simulator-deployment.yaml
+  - simulator-podmonitor.yaml
+  - application.yaml
+
+patches:
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Application
+      name: inference-sim-scheduling
+    path: patch-gaie-values.yaml

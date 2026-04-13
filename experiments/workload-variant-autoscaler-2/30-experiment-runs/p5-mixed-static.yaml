@@ -1,0 +1,71 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: p5-mixed-static-
+  namespace: experiment-01
+spec:
+  params:
+    - name: target-url
+      value: 'http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local'
+    - name: model
+      value: Qwen/Qwen3-32B-AWQ
+    - name: reset-llm-d
+      value: 'true'
+    - name: namespace
+      value: experiment-01
+    - name: test-name
+      value: replicas-6
+    - name: scaled-object
+      value: ""
+    - name: initial-replicas
+      value: "6"
+    # P-5: Mixed Complexity — 1.0 req/s with heterogeneous token distribution
+    - name: load-steps
+      value:
+        - |
+          name: mixed
+          delay: 0
+          duration: 3600
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 1.0
+            data:
+              prompt_tokens: 8000
+              prompt_tokens_stdev: 8500
+              prompt_tokens_min: 50
+              prompt_tokens_max: 30000
+              output_tokens: 800
+              output_tokens_stdev: 1500
+              output_tokens_min: 20
+              output_tokens_max: 8000
+  pipelineRef:
+    name: wva-load-test
+  taskRunTemplate:
+    podTemplate:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+    serviceAccountName: pipeline
+  timeouts:
+    finally: 1h0m0s
+    pipeline: 12h0m0s
+    tasks: 4h0m0s
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        metadata:
+          creationTimestamp: null
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 32Gi
+        status: {}

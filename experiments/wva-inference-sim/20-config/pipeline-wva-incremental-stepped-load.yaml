@@ -1,0 +1,151 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: wva-sim-incremental-stepped-load-test
+  namespace: experiment-02
+spec:
+  params:
+    - name: target-url
+      type: string
+      default: "http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local"
+    - name: model
+      type: string
+      default: "meta-llama/Llama-3.1-8B"
+    - name: hf-secret-name
+      type: string
+      default: "huggingface-secret"
+    - name: namespace
+      type: string
+      default: "experiment-02"
+    - name: deployment-name
+      type: string
+      default: "inference-sim-decode"
+    - name: test-name
+      type: string
+      default: "wva-sim-incremental-stepped-load-test"
+    - name: reset-llm-d
+      type: string
+      default: "false"
+    - name: scaled-object
+      type: string
+      default: ""
+    - name: initial-replicas
+      type: string
+      default: "1"
+  workspaces:
+    - name: shared-workspace
+  finally:
+    - name: cleanup
+      when:
+        - input: $(params.reset-llm-d)
+          operator: in
+          values: ["true", "True", "TRUE"]
+      taskSpec:
+        steps:
+          - name: delete-scaled-object
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            script: |
+              if [ -n "$(params.scaled-object)" ]; then
+                echo "Deleting ScaledObject"
+                kubectl delete scaledobject inference-sim-deployment-scaler -n $(params.namespace) || true
+              else
+                echo "No ScaledObject provided, skipping deletion."
+              fi
+              kubectl scale deployment $(params.deployment-name) --replicas=0 -n $(params.namespace)
+  tasks:
+    - name: wait-for-other-pipeline-runs
+      timeout: 4h
+      taskSpec:
+        steps:
+          - name: wait-for-other-pipeline-runs
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            script: |
+              while [[ "$(kubectl get pods -n $(params.namespace) -l tekton.dev/pipelineRun -o name --field-selector=status.phase=Running 2>/dev/null | wc -l)" -gt 1 ]]; do
+                echo "Waiting for other pipeline runs to finish..."
+                sleep 60
+              done
+    - name: reset-llm-d
+      runAfter:
+        - wait-for-other-pipeline-runs
+      when:
+        - input: $(params.reset-llm-d)
+          operator: in
+          values: ["true", "True", "TRUE"]
+      taskSpec:
+        steps:
+          - name: reset-deployment
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            script: |
+              kubectl delete scaledobject inference-sim-deployment-scaler -n $(params.namespace) || true
+              kubectl scale deployment $(params.deployment-name) --replicas=0 -n $(params.namespace)
+              kubectl scale deployment $(params.deployment-name) --replicas=$(params.initial-replicas) -n $(params.namespace)
+              kubectl wait --for=condition=available --timeout=300s deployment/$(params.deployment-name) -n $(params.namespace)
+              if [ -n "$(params.scaled-object)" ]; then
+                echo "$(params.scaled-object)" > /tmp/obj.yaml
+                kubectl apply -n $(params.namespace) -f /tmp/obj.yaml
+              fi
+              sleep 60
+    - name: load-test
+      runAfter:
+        - reset-llm-d
+        - wait-for-other-pipeline-runs
+      timeout: 2h
+      matrix:
+        include:
+          - name: "3600s+0s"
+            params:
+              - name: max-seconds
+                value: "3600"
+              - name: start-delay
+                value: "0"
+          - name: "3000s+600s"
+            params:
+              - name: max-seconds
+                value: "3000"
+              - name: start-delay
+                value: "600"
+          - name: "2400s+1200s"
+            params:
+              - name: start-delay
+                value: "1200"
+              - name: max-seconds
+                value: "2400"
+          - name: "1800s+1800s"
+            params:
+              - name: start-delay
+                value: "1800"
+              - name: max-seconds
+                value: "1800"
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: guidellm-load-generator
+          - name: namespace
+            value: pipelines
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: model
+          value: $(params.model)
+        - name: scenario
+          value: |
+            request_type: text_completions
+            profile: constant
+            rate: 0.5
+            data:
+              prompt_tokens: 1024
+              output_tokens: 2048
+        - name: output-basename
+          value: benchmark-wva-sim
+        - name: hf-secret-name
+          value: $(params.hf-secret-name)
+        - name: basepath
+          value: /workspace/results/$(context.pipelineRun.name)
+        - name: test-name
+          value: $(params.test-name)
+      workspaces:
+        - name: results
+          workspace: shared-workspace

@@ -48,7 +48,9 @@ spec:
                  # oc -n openshift-machine-api get machinesets -o jsonpath='{.items[0].metadata.labels.machine\.openshift\.io/cluster-api-cluster}{"\n"}'
                  clusterApiCluster: SET_ME_CLUSTER_NAME_HERE
                  region: eu-de
-                 zones: ["1", "2", "3"]
+                 zones: ["1"]
+                 ibmCloud:
+                   resourceGroup: "SET_ME_RESOURCE_GROUP_HERE"
          - target:
              kind: Application
              group: argoproj.io

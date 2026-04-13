@@ -1,0 +1,6 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: experiment-02
+  labels:
+    openshift.io/user-monitoring: "true"

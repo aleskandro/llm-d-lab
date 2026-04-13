@@ -1,0 +1,161 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: wva-load-test
+  namespace: experiment-01
+spec:
+  params:
+    - name: target-url
+      type: string
+      default: "http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local"
+    - name: model
+      type: string
+      default: "Qwen/Qwen3-32B-AWQ"
+    - name: hf-secret-name
+      type: string
+      default: "huggingface-secret"
+    - name: namespace
+      type: string
+      default: "experiment-01"
+    - name: deployment-name
+      type: string
+      default: "llm-d-inference-scheduling-llm-d-modelservice-decode"
+    - name: test-name
+      type: string
+      default: "load-test"
+    - name: reset-llm-d
+      type: string
+      default: "false"
+    - name: scaled-object
+      type: string
+      default: ""
+    - name: initial-replicas
+      type: string
+      default: "1"
+    - name: load-steps
+      type: array
+      description: |
+        Array of YAML strings, one per load step.  Each element:
+          name: <id>
+          delay: <seconds>
+          duration: <seconds>
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: <req/s>
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+  workspaces:
+    - name: shared-workspace
+  finally:
+    - name: collect-logs
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: collect-application-logs
+          - name: namespace
+            value: pipelines
+      params:
+        - name: namespace
+          value: $(params.namespace)
+        - name: deployment-name
+          value: $(params.deployment-name)
+      workspaces:
+        - name: results
+          workspace: shared-workspace
+    - name: cleanup
+      when:
+        - input: $(params.reset-llm-d)
+          operator: in
+          values: ["true", "True", "TRUE"]
+      taskSpec:
+        steps:
+          - name: delete-scaled-object
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            script: |
+              if [ -n "$(params.scaled-object)" ]; then
+                echo "Deleting ScaledObject"
+                kubectl delete scaledobject vllme-deployment-scaler -n $(params.namespace) || true
+              else
+                echo "No ScaledObject provided, skipping deletion."
+              fi
+              kubectl scale deployment $(params.deployment-name) --replicas=0 -n $(params.namespace)
+  tasks:
+    - name: wait-for-other-pipeline-runs
+      timeout: 4h
+      taskSpec:
+        steps:
+          - name: wait-for-other-pipeline-runs
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            env:
+            - name: PIPELINERUN
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tekton.dev/pipelineRun']
+            script: |
+              echo "Waiting for other pipeline runs to complete..."
+              while [[ "$(kubectl get pods \
+                      -l tekton.dev/pipeline=wva-load-test,tekton.dev/pipelineRun!=${PIPELINERUN} \
+                      --field-selector='status.phase=Running' | wc -l 2>/dev/null)" != 0 ]]; do
+                kubectl get pods \
+                      -l tekton.dev/pipeline=wva-load-test,tekton.dev/pipelineRun!=${PIPELINERUN} \
+                      --field-selector='status.phase=Running'
+                echo "Other pipeline runs are still in progress. Sleeping for 60s..."
+                sleep 60
+              done
+    - name: reset-llm-d
+      runAfter:
+        - wait-for-other-pipeline-runs
+      when:
+        - input: $(params.reset-llm-d)
+          operator: in
+          values: ["true", "True", "TRUE"]
+      taskSpec:
+        steps:
+          - name: reset-llm-d
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            script: |
+              kubectl delete scaledobject vllme-deployment-scaler -n $(params.namespace) || true
+              kubectl scale deployment $(params.deployment-name) --replicas=0 -n $(params.namespace)
+              kubectl scale deployment $(params.deployment-name) --replicas=$(params.initial-replicas) -n $(params.namespace)
+              kubectl wait --for=condition=available --timeout=900s deployment/$(params.deployment-name) -n $(params.namespace)
+              kubectl get pods -n $(params.namespace) | grep $(params.deployment-name)
+              if [ -n "$(params.scaled-object)" ]; then
+                echo "Applying ScaledObject"
+                echo "$(params.scaled-object)" > /tmp/obj.yaml
+                cat /tmp/obj.yaml
+                kubectl apply -n $(params.namespace) -f /tmp/obj.yaml
+              else
+                echo "No ScaledObject provided, skipping."
+              fi
+              echo "Waiting additional 60s for stabilization"
+              sleep 60
+    - name: load-test
+      runAfter:
+        - reset-llm-d
+        - wait-for-other-pipeline-runs
+      timeout: 2h
+      taskRef:
+        name: guidellm-load-step
+      matrix:
+        params:
+          - name: step-config
+            value: $(params.load-steps)
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: model
+          value: $(params.model)
+        - name: hf-secret-name
+          value: $(params.hf-secret-name)
+        - name: basepath
+          value: $(context.pipelineRun.name)
+        - name: test-name
+          value: $(params.test-name)
+      workspaces:
+        - name: results
+          workspace: shared-workspace

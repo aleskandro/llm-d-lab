@@ -1,0 +1,27 @@
+---
+# Cross-namespace RBAC — targets llm-d-autoscaler, not experiment-01.
+# kustomization.yaml patches restore the correct namespace after the
+# global namespace transformer overrides it.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pipeline-read-pod-logs
+  namespace: llm-d-autoscaler
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pipeline-read-pod-logs
+  namespace: llm-d-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: pipeline
+    namespace: experiment-01
+roleRef:
+  kind: Role
+  name: pipeline-read-pod-logs
+  apiGroup: rbac.authorization.k8s.io

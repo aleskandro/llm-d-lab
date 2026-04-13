@@ -3031,7 +3031,7 @@ spec:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "inferno_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"}",
+              "expr": "wva_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"}",
               "legendFormat": "Current Replicas ({{variant_name}} on {{accelerator_type}})",
               "range": true,
               "refId": "A"
@@ -3042,7 +3042,7 @@ spec:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "inferno_desired_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"}",
+              "expr": "wva_desired_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"}",
               "instant": false,
               "legendFormat": "Desired Replicas ({{variant_name}} on {{accelerator_type}})",
               "range": true,
@@ -3167,7 +3167,7 @@ spec:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "inferno_current_replicas{variant_name=~\"$variant_name\",accelerator_type=~\"$accelerator_type\"}",
+              "expr": "wva_current_replicas{variant_name=~\"$variant_name\",accelerator_type=~\"$accelerator_type\"}",
               "legendFormat": "Current Replicas ({{variant_name}} on {{accelerator_type}})",
               "range": true,
               "refId": "A"
@@ -3178,7 +3178,7 @@ spec:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "inferno_desired_ratio{variant_name=~\"$variant_name\",accelerator_type=~\"$accelerator_type\"}",
+              "expr": "wva_desired_ratio{variant_name=~\"$variant_name\",accelerator_type=~\"$accelerator_type\"}",
               "instant": false,
               "legendFormat": "Desired Ratio ({{variant_name}} on {{accelerator_type}})",
               "range": true,
@@ -4227,7 +4227,7 @@ spec:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "inferno_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"} and (delta(inferno_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"}[30s]) > 0)",
+              "expr": "wva_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"} and (delta(wva_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"}[30s]) > 0)",
               "instant": false,
               "legendFormat": "Current Replicas - Scale out (y2)",
               "range": true,
@@ -4239,7 +4239,7 @@ spec:
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "inferno_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"} and (delta(inferno_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"}[30s]) < 0)",
+              "expr": "wva_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"} and (delta(wva_current_replicas{variant_name=\"$variant_name\", accelerator_type=~\"$accelerator_type\"}[30s]) < 0)",
               "instant": false,
               "legendFormat": "Current Replicas - Scale in (y2)",
               "range": true,

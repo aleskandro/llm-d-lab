@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: inference-sim-scheduling
+  labels: {}
+  namespace: openshift-gitops
+spec:
+  project: default
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: experiment-02
+    name: ''
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        openshift.io/user-monitoring: "true"
+    syncOptions:
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: false
+    retry:
+      limit: 8
+      backoff:
+        duration: 5s
+        maxDuration: 5m0s
+        factor: 2
+  sources:
+    - repoURL: registry.k8s.io/gateway-api-inference-extension/charts
+      targetRevision: v1.3.1
+      chart: inferencepool
+      name: "gaie-inference-sim"
+      helm:
+        valuesObject: {}

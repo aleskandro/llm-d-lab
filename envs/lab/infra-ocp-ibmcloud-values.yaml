@@ -1,6 +1,6 @@
 # Default values for machinesets.
 region: eu-de
-zones: ["1", "2", "3"]
+zones: ["1"]
 clusterApiCluster: "" # see label machine.openshift.io/cluster-api-cluster in any Machine object in the cluster
 namespace: openshift-machine-api
 
@@ -23,7 +23,7 @@ machinesets:
     nodeLabels:
       benchmark.llm-d.ai/test-cpu-amd64: "true"
   - name: infra-amd64
-    autoscaler: true
+    autoscaler: false
     minReplicas: 1
     maxReplicas: 3
     replicas: 0

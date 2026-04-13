@@ -51,6 +51,7 @@ Accelerate reproducible inference experiments for large language models with [LL
 4. Deploy with `oc apply -k overlays/aws/`.
 5. Wait for all ArgoCD applications to become ready: you can find them in the OpenShift WebUI or via `oc get applications -n openshift-gitops`.
 6. From here on any changes to the repo will be automatically applied to the cluster by ArgoCD, and ArgoCD will continuously ensure the cluster state matches the desired state defined in the Git repository.
+7. The RHOAI and the upstream llm-d components are explicitly NOT deployed due to compatiblity issues. In order to manually deploy downstream or upstream components before benchmarking use [this gist](https://gist.github.com/mnmehta/c9511baea335b4331ab826f4d00d6d6d#file-infrastructure_scripts-md)
 
 NOTE: The initial setup will take longer, especially if the cluster requires scaling out worker nodes. The applications will report progressing and degraded states until all dependencies are met and the cluster converges to the desired state.
 
@@ -63,6 +64,7 @@ NOTE: The initial setup will take longer, especially if the cluster requires sca
 4. Deploy with `oc apply -k overlays/ibmcloud/`.
 5. Wait for all ArgoCD applications to become ready: you can find them in the OpenShift WebUI or via `oc get applications -n openshift-gitops`.
 6. From here on any changes to the repo will be automatically applied to the cluster by ArgoCD, and ArgoCD will continuously ensure the cluster state matches the desired state defined in the Git repository.
+7. The RHOAI and the upstream llm-d components are explicitly NOT deployed due to compatiblity issues. In order to manually deploy downstream or upstream components before benchmarking see [this gist](https://gist.github.com/mnmehta/c9511baea335b4331ab826f4d00d6d6d#file-infrastructure_scripts-md)
 
 NOTE: The initial setup will take longer, especially if the cluster requires scaling out worker nodes. The applications will report progressing and degraded states until all dependencies are met and the cluster converges to the desired state.
 

@@ -7,5 +7,6 @@ resources:
   #- task-deploy-helmfile.yaml
   - task-sleep.yaml
   - task-verify-llm-d.yaml
+  - task-collect-logs.yaml
 
 namespace: pipelines

@@ -1,0 +1,137 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: collect-application-logs
+  namespace: pipelines
+spec:
+  description: |
+    Collects logs from vLLM, EPP, and WVA pods into the shared workspace.
+    Intended as a finally task so logs are captured even when the load test
+    fails.  Logs are written to <workspace>/logs/<component>/<pod>.log and
+    can be fetched with fetch-results.sh alongside the benchmark JSONs.
+  params:
+    - name: namespace
+      type: string
+      description: Namespace where vLLM and EPP pods run
+      default: "experiment-01"
+    - name: deployment-name
+      type: string
+      description: vLLM Deployment name (also used to derive EPP name)
+      default: "llm-d-inference-scheduling-llm-d-modelservice-decode"
+    - name: wva-namespace
+      type: string
+      description: Namespace where WVA controller runs
+      default: "llm-d-autoscaler"
+    - name: wva-label
+      type: string
+      description: Label selector for WVA pods
+      default: "app.kubernetes.io/name=workload-variant-autoscaler"
+    - name: log-tail-lines
+      type: string
+      description: Max lines per container (0 = all)
+      default: "0"
+  workspaces:
+    - name: results
+      description: Shared workspace to write log files into
+  steps:
+    - name: collect
+      image: ghcr.io/helmfile/helmfile:v1.2.2
+      computeResources:
+        requests:
+          memory: "64Mi"
+          cpu: "50m"
+        limits:
+          memory: "256Mi"
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        NS="$(params.namespace)"
+        DEPLOY="$(params.deployment-name)"
+        WVA_NS="$(params.wva-namespace)"
+        WVA_LABEL="$(params.wva-label)"
+        TAIL="$(params.log-tail-lines)"
+        LOGDIR="$(workspaces.results.path)/logs"
+
+        TAIL_FLAG=""
+        if [ "$TAIL" != "0" ] && [ -n "$TAIL" ]; then
+          TAIL_FLAG="--tail=${TAIL}"
+        fi
+
+        mkdir -p "${LOGDIR}"
+
+        collect_logs() {
+          local component="$1"
+          local namespace="$2"
+          local selector="$3"
+
+          local outdir="${LOGDIR}/${component}"
+          mkdir -p "${outdir}"
+
+          echo "==> Collecting ${component} logs (ns=${namespace}, selector=${selector})"
+          PODS=$(kubectl get pods -n "${namespace}" -l "${selector}" \
+                 -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)
+
+          if [ -z "${PODS}" ]; then
+            echo "    No pods found, skipping."
+            return
+          fi
+
+          for POD in ${PODS}; do
+            echo "    ${POD}"
+            CONTAINERS=$(kubectl get pod "${POD}" -n "${namespace}" \
+                         -o jsonpath='{.spec.containers[*].name}' 2>/dev/null || true)
+            for CTR in ${CONTAINERS}; do
+              local logfile="${outdir}/${POD}_${CTR}.log"
+              kubectl logs "${POD}" -n "${namespace}" -c "${CTR}" ${TAIL_FLAG} \
+                > "${logfile}" 2>&1 || true
+
+              # also grab previous container logs if pod restarted
+              kubectl logs "${POD}" -n "${namespace}" -c "${CTR}" --previous ${TAIL_FLAG} \
+                > "${outdir}/${POD}_${CTR}_previous.log" 2>/dev/null || true
+              # remove empty previous-log files
+              [ -s "${outdir}/${POD}_${CTR}_previous.log" ] || rm -f "${outdir}/${POD}_${CTR}_previous.log"
+            done
+          done
+        }
+
+        # --- vLLM pods ---
+        # The Deployment name is the label value for app in the pod template
+        # Try multiple selectors that commonly match vLLM pods
+        VLLM_SELECTOR="llm-d.ai/inference-serving=true"
+        collect_logs "vllm" "${NS}" "${VLLM_SELECTOR}"
+
+        # --- EPP pods ---
+        # EPP deployment name follows the pattern: <prefix>-epp
+        # Derive from vLLM deployment by stripping the trailing component
+        EPP_PREFIX=$(echo "${DEPLOY}" | sed 's/-[^-]*$//')
+        EPP_SELECTOR="app.kubernetes.io/name=${EPP_PREFIX}-epp"
+        collect_logs "epp" "${NS}" "${EPP_SELECTOR}"
+        # Fallback: try matching by pod name prefix if label didn't match
+        EPP_PODS=$(kubectl get pods -n "${NS}" --no-headers \
+                   -o custom-columns=':metadata.name' 2>/dev/null \
+                   | grep -i epp || true)
+        if [ -n "${EPP_PODS}" ]; then
+          LOGDIR_EPP="${LOGDIR}/epp"
+          mkdir -p "${LOGDIR_EPP}"
+          for POD in ${EPP_PODS}; do
+            if [ ! -f "${LOGDIR_EPP}/${POD}_"*.log ] 2>/dev/null; then
+              echo "    ${POD} (name match)"
+              kubectl logs "${POD}" -n "${NS}" --all-containers ${TAIL_FLAG} \
+                > "${LOGDIR_EPP}/${POD}_all.log" 2>&1 || true
+            fi
+          done
+        fi
+
+        # --- WVA controller pods ---
+        collect_logs "wva" "${WVA_NS}" "${WVA_LABEL}"
+
+        # --- summary ---
+        echo ""
+        echo "==> Collected logs:"
+        find "${LOGDIR}" -type f -name "*.log" | sort | while read -r f; do
+          SIZE=$(du -h "$f" | cut -f1)
+          echo "    ${f#$(workspaces.results.path)/}  (${SIZE})"
+        done
+        echo ""
+        echo "==> Done. Fetch with: ./fetch-results.sh <pvc-name>"

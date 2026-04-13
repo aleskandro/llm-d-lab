@@ -31,7 +31,7 @@ spec:
       script: |
         #!/bin/bash
         set -euo pipefail
-        while ! kubectl get pods -n $(params.namespace) -l llm-d.ai/inferenceServing=true -o jsonpath='{.items[0].status.phase}' | grep -q 'Running\|Succeeded'; do
+        while ! kubectl get pods -n $(params.namespace) -l llm-d.ai/inference-serving=true -o jsonpath='{.items[0].status.phase}' | grep -q 'Running\|Succeeded'; do
           echo "Waiting for LLM-D pods to be in Running or Succeeded state..."
           sleep 10
         done

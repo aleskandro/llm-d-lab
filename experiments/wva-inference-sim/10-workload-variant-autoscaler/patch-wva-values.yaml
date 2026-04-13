@@ -1,0 +1,63 @@
+# Set the values for the Workload Variant Autoscaler (WVA) Helm chart deployment
+- op: replace
+  path: /spec/sources/0/helm/valuesObject
+  value:
+    wva:
+      enabled: true
+      namespaceScoped: false
+      poolGroup: "inference.networking.k8s.io"
+
+      image:
+        repository: ghcr.io/llm-d/llm-d-workload-variant-autoscaler
+        tag: v0.5.1
+      imagePullPolicy: Always
+
+      metrics:
+        enabled: true
+        port: 8443
+        secure: true
+
+      reconcileInterval: 60s
+
+      prometheus:
+        monitoringNamespace: openshift-user-workload-monitoring
+        serviceAccountName: "kube-prometheus-stack-prometheus"
+        baseURL: "https://thanos-querier.openshift-monitoring.svc.cluster.local:9091"
+        tls:
+          insecureSkipVerify: true
+        # Replace with your cluster's CA certificate
+        caCert: |-
+          ### SET ME ###
+
+      experimentalHybridOptimization: off
+      scaleToZero: false
+
+      capacityScaling:
+        default:
+          kvCacheThreshold: 0.80
+          queueLengthThreshold: 5
+          kvSpareTrigger: 0.1
+          queueSpareTrigger: 3
+        overrides: {}
+
+    llmd:
+      namespace: experiment-02
+      modelName: inference-sim-scheduling
+      modelID: "meta-llama/Llama-3.1-8B"
+
+    va:
+      enabled: false
+      accelerator: simulated
+      sloTpot: 10
+      sloTtft: 1000
+
+    hpa:
+      enabled: false
+      maxReplicas: 10
+      targetAverageValue: "1"
+
+    vllmService:
+      enabled: false
+      nodePort: 30000
+      interval: 15s
+      scheme: http

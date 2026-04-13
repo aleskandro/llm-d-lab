@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: inference-sim-decode
+  namespace: experiment-02
+  labels:
+    app: inference-sim-decode
+spec:
+  selector:
+    matchLabels:
+      app: inference-sim-decode
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

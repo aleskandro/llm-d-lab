@@ -1,0 +1,65 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: p4-sustained-static-
+  namespace: experiment-01
+spec:
+  params:
+    - name: target-url
+      value: 'http://openshift-ai-inference-istio.openshift-ingress.svc.cluster.local'
+    - name: model
+      value: Qwen/Qwen3-32B-AWQ
+    - name: reset-llm-d
+      value: 'true'
+    - name: namespace
+      value: experiment-01
+    - name: test-name
+      value: replicas-6
+    - name: scaled-object
+      value: ""
+    - name: initial-replicas
+      value: "6"
+    # P-4: Sustained Near-Peak — 1.0 req/s constant for 60 min
+    - name: load-steps
+      value:
+        - |
+          name: sustained
+          delay: 0
+          duration: 3600
+          scenario: |
+            request_type: text_completions
+            profile: constant
+            rate: 1.0
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+  pipelineRef:
+    name: wva-load-test
+  taskRunTemplate:
+    podTemplate:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+    serviceAccountName: pipeline
+  timeouts:
+    finally: 1h0m0s
+    pipeline: 12h0m0s
+    tasks: 4h0m0s
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        metadata:
+          creationTimestamp: null
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 32Gi
+        status: {}

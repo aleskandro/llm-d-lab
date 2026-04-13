@@ -131,7 +131,7 @@ spec:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "inferno_current_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"}",
+              "expr": "wva_current_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"}",
               "instant": false,
               "legendFormat": "Current - {{variant_name}}",
               "range": true,
@@ -143,7 +143,7 @@ spec:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "inferno_desired_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"}",
+              "expr": "wva_desired_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"}",
               "hide": false,
               "instant": false,
               "legendFormat": "Desired - {{variant_name}}",
@@ -242,7 +242,7 @@ spec:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "inferno_desired_ratio{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"}",
+              "expr": "wva_desired_ratio{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"}",
               "instant": false,
               "legendFormat": "{{variant_name}}",
               "range": true,
@@ -340,7 +340,7 @@ spec:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "abs(inferno_desired_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"} - inferno_current_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"})",
+              "expr": "abs(wva_desired_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"} - wva_current_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"})",
               "instant": false,
               "legendFormat": "{{variant_name}}",
               "range": true,
@@ -438,7 +438,7 @@ spec:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "rate(inferno_replica_scaling_total{namespace=\"$namespace\",variant_name=~\"$variantName\",direction=\"up\"}[$__rate_interval])",
+              "expr": "rate(wva_replica_scaling_total{namespace=\"$namespace\",variant_name=~\"$variantName\",direction=\"up\"}[$__rate_interval])",
               "instant": false,
               "legendFormat": "Scale Up - {{variant_name}}",
               "range": true,
@@ -450,7 +450,7 @@ spec:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "rate(inferno_replica_scaling_total{namespace=\"$namespace\",variant_name=~\"$variantName\",direction=\"down\"}[$__rate_interval])",
+              "expr": "rate(wva_replica_scaling_total{namespace=\"$namespace\",variant_name=~\"$variantName\",direction=\"down\"}[$__rate_interval])",
               "hide": false,
               "instant": false,
               "legendFormat": "Scale Down - {{variant_name}}",
@@ -549,7 +549,7 @@ spec:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum by(reason) (rate(inferno_replica_scaling_total{namespace=\"$namespace\",variant_name=~\"$variantName\"}[$__rate_interval]))",
+              "expr": "sum by(reason) (rate(wva_replica_scaling_total{namespace=\"$namespace\",variant_name=~\"$variantName\"}[$__rate_interval]))",
               "instant": false,
               "legendFormat": "{{reason}}",
               "range": true,
@@ -624,7 +624,7 @@ spec:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "inferno_current_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"}",
+              "expr": "wva_current_replicas{namespace=\"$namespace\",variant_name=~\"$variantName\",accelerator_type=~\"$accelerator_type\"}",
               "instant": false,
               "legendFormat": "{{variant_name}} ({{accelerator_type}})",
               "range": true,
@@ -691,7 +691,7 @@ spec:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(inferno_replica_scaling_total{namespace=\"$namespace\",variant_name=~\"$variantName\"}[$__range]))",
+              "expr": "sum(increase(wva_replica_scaling_total{namespace=\"$namespace\",variant_name=~\"$variantName\"}[$__range]))",
               "instant": false,
               "legendFormat": "Total Scaling Operations",
               "range": true,
@@ -1081,7 +1081,7 @@ spec:
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "definition": "label_values(inferno_current_replicas, namespace)",
+            "definition": "label_values(wva_current_replicas, namespace)",
             "hide": 0,
             "includeAll": false,
             "label": "namespace",
@@ -1089,7 +1089,7 @@ spec:
             "name": "namespace",
             "options": [],
             "query": {
-              "query": "label_values(inferno_current_replicas, namespace)",
+              "query": "label_values(wva_current_replicas, namespace)",
               "refId": "StandardVariableQuery"
             },
             "refresh": 1,
@@ -1108,7 +1108,7 @@ spec:
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "definition": "label_values(inferno_current_replicas{namespace=\"$namespace\"}, variant_name)",
+            "definition": "label_values(wva_current_replicas{namespace=\"$namespace\"}, variant_name)",
             "hide": 0,
             "includeAll": true,
             "label": "variantName",
@@ -1116,7 +1116,7 @@ spec:
             "name": "variantName",
             "options": [],
             "query": {
-              "query": "label_values(inferno_current_replicas{namespace=\"$namespace\"}, variant_name)",
+              "query": "label_values(wva_current_replicas{namespace=\"$namespace\"}, variant_name)",
               "refId": "StandardVariableQuery"
             },
             "refresh": 1,
@@ -1135,7 +1135,7 @@ spec:
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "definition": "label_values(inferno_current_replicas{namespace=\"$namespace\"}, accelerator_type)",
+            "definition": "label_values(wva_current_replicas{namespace=\"$namespace\"}, accelerator_type)",
             "hide": 0,
             "includeAll": true,
             "label": "accelerator_type",
@@ -1143,7 +1143,7 @@ spec:
             "name": "accelerator_type",
             "options": [],
             "query": {
-              "query": "label_values(inferno_current_replicas{namespace=\"$namespace\"}, accelerator_type)",
+              "query": "label_values(wva_current_replicas{namespace=\"$namespace\"}, accelerator_type)",
               "refId": "StandardVariableQuery"
             },
             "refresh": 1,
@@ -1162,7 +1162,7 @@ spec:
               "type": "prometheus",
               "uid": "${DS_PROMETHEUS}"
             },
-            "definition": "label_values(inferno_current_replicas{namespace=\"$namespace\"}, model_name)",
+            "definition": "label_values(wva_current_replicas{namespace=\"$namespace\"}, model_name)",
             "hide": 0,
             "includeAll": true,
             "label": "model_name",
@@ -1170,7 +1170,7 @@ spec:
             "name": "model_name",
             "options": [],
             "query": {
-              "query": "label_values(inferno_current_replicas{namespace=\"$namespace\"}, model_name)",
+              "query": "label_values(wva_current_replicas{namespace=\"$namespace\"}, model_name)",
               "refId": "StandardVariableQuery"
             },
             "refresh": 1,

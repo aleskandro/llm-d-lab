@@ -1,0 +1,14 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+# No global `namespace:` — each resource declares its own.
+# This allows rbac-cross-namespace.yaml to target llm-d-autoscaler
+# while everything else targets experiment-01.
+resources:
+  - rbac.yaml
+  - rbac-cross-namespace.yaml
+  - trigger-auth.yaml
+  - keda-prometheus-sa-token-secret.yaml
+  - pipeline-wva-load-test.yaml
+  - task-multi-load-generator.yaml
+  - variant-autoscaling-capacity.yaml
+  - 99-hf-secret.yaml

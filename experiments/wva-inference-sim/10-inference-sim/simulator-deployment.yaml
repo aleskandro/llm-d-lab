@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference-sim-decode
+  namespace: experiment-02
+  labels:
+    app: inference-sim-decode
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inference-sim-decode
+  template:
+    metadata:
+      labels:
+        app: inference-sim-decode
+        llm-d.ai/inference-serving: "true"
+    spec:
+      serviceAccountName: inference-sim
+      securityContext:
+        runAsUser: 0
+      initContainers:
+        - name: download-tokenizer
+          image: curlimages/curl:8.7.1
+          command: ["sh", "-c"]
+          args:
+            - |
+              MODEL="meta-llama/Llama-3.1-8B"
+              BASE="https://huggingface.co/${MODEL}/resolve/main"
+              DIR="/mnt/models/${MODEL}"
+              mkdir -p "${DIR}"
+              for f in tokenizer.json tokenizer_config.json; do
+                echo "Downloading ${f}..."
+                curl -fsSL -H "Authorization: Bearer ${HF_TOKEN}" \
+                  "${BASE}/${f}" -o "${DIR}/${f}"
+              done
+              echo "Tokenizer files ready."
+              ls -la "${DIR}/"
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: huggingface-secret
+                  key: token
+          volumeMounts:
+            - name: tokenizer-data
+              mountPath: /mnt/models
+        - name: simulate-model-loading
+          image: busybox:1.36
+          command: ["sh", "-c"]
+          args:
+            - |
+              BASE=${STARTUP_DELAY_SECONDS:-120}
+              JITTER=${STARTUP_JITTER_SECONDS:-10}
+              DELAY=$((BASE - JITTER + $(od -An -tu2 -N2 /dev/urandom | tr -d ' ') % (2 * JITTER + 1)))
+              echo "Simulating model loading (${DELAY}s, base=${BASE} ±${JITTER})..."
+              sleep "$DELAY"
+              echo "Model loading complete."
+          env:
+            - name: STARTUP_DELAY_SECONDS
+              value: "120"
+            - name: STARTUP_JITTER_SECONDS
+              value: "10"
+      containers:
+        - name: inference-sim
+          image: ghcr.io/llm-d/llm-d-inference-sim:latest
+          args:
+            - "--config=/etc/simulator/config.yaml"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: LOCAL_TOKENIZER_DIR
+              value: /mnt/models
+          volumeMounts:
+            - name: sim-config
+              mountPath: /etc/simulator
+              readOnly: true
+            - name: tokenizer-data
+              mountPath: /mnt/models
+              readOnly: true
+          ports:
+            - containerPort: 8000
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "4"
+              memory: "1Gi"
+          startupProbe:
+            httpGet:
+              path: /v1/models
+              port: 8000
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /v1/models
+              port: 8000
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+      volumes:
+        - name: sim-config
+          configMap:
+            name: inference-sim-config
+        - name: tokenizer-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference-sim-decode
+  namespace: experiment-02
+  labels:
+    app: inference-sim-decode
+spec:
+  selector:
+    app: inference-sim-decode
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP

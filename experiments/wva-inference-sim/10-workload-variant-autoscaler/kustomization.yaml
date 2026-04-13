@@ -1,0 +1,13 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+
+resources:
+  - application.yaml
+
+patches:
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Application
+      name: workload-variant-autoscaler
+    path: patch-wva-values.yaml
