@@ -83,4 +83,10 @@ operators:
     namespace: openshift-cluster-csi-drivers
     source: redhat-operators
     sourceNamespace: openshift-marketplace
+  - channel: stable
+    name: local-storage-operator
+    namespace: openshift-local-storage
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    targetNamespace: openshift-local-storage
 # TODO: Add Kueue
