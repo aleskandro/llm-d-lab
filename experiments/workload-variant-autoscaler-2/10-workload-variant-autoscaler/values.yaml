@@ -23,8 +23,8 @@ wva:
     tls:
       insecureSkipVerify: true   # Development: true, Production: false
       caCertPath: "/etc/ssl/certs/prometheus-ca.crt"
-    caCert: |
-        ########### REPLACE ME #############
+      caCert: |-
+          ### SET ME ###
 
 
 # Environment variable to enable experimental hybrid-based optimization
