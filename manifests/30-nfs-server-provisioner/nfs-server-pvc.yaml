@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-server-storage
+  namespace: nfs-provisioner
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-sc
+  resources:
+    requests:
+      storage: 100Gi

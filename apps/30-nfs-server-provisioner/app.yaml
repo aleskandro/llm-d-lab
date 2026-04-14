@@ -1,16 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: local-storage
+  name: nfs-server-provisioner
   labels:
     app.kubernetes.io/managed-by: llm-d-lab
 spec:
   destination:
     name: ''
-    namespace: default
+    namespace: nfs-provisioner
     server: 'https://kubernetes.default.svc'
   source:
-    path: manifests/30-local-storage
+    path: manifests/30-nfs-server-provisioner
     repoURL: https://github.com/aleskandro/llm-d-lab.git
     targetRevision: master
   sources: []
@@ -22,6 +22,7 @@ spec:
       allowEmpty: false
     syncOptions:
       - ServerSideApply=true
+      - CreateNamespace=true
     retry:
       limit: 8
       backoff:

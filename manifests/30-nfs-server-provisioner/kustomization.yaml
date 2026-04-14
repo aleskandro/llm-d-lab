@@ -1,0 +1,11 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+
+resources:
+  - namespace.yaml
+  - openshift-scc.yaml
+  - nfs-server-pvc.yaml
+  - nfs-combined-deployment.yaml
+  - nfs-server-service.yaml
+  - nfs-provisioner-rbac.yaml
+  - nfs-storageclass.yaml

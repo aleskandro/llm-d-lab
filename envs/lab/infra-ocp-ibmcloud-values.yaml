@@ -8,6 +8,20 @@ ibmCloud:
   resourceGroup: "Default"
 
 machinesets:
+  - name: storage
+    autoscaler: false
+    minReplicas: 1
+    maxReplicas: 1
+    replicas: 1
+    instanceType: "ox2-64x512"
+    architecture: "amd64"
+    taints:
+      - key: benchmark.llm-d.ai/storage
+        effect: NoSchedule
+    annotations:
+      capacity.cluster-autoscaler.kubernetes.io/labels: "benchmark.llm-d.ai/storage=true"
+    nodeLabels:
+      benchmark.llm-d.ai/storage: "true"
   - name: test-cpu-amd64
     autoscaler: false # autoscale from zero is not supported for IBM Cloud
     minReplicas: 1

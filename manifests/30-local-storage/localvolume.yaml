@@ -4,22 +4,20 @@ metadata:
   name: "local-disks"
   namespace: "openshift-local-storage"
 spec:
+  tolerations:
+    - key: benchmark.llm-d.ai/storage
+      effect: NoSchedule
   nodeSelector:
     nodeSelectorTerms:
       - matchExpressions:
-          - key: benchmark.llm-d.ai/test-gpu-amd64
+          - key: benchmark.llm-d.ai/storage
             operator: In
             values:
               - 'true'
-          - key: node.kubernetes.io/instance-type
-            operator: In
-            values:
-            - gx3d-48x240x2a100p
-            - gx3d-160x1792x8h100
-            - gx3d-160x1792x8h200
   storageClassDevices:
     - storageClassName: "local-sc"
       volumeMode: Filesystem
       fsType: xfs
       devicePaths:
         - /dev/vdb
+        - /dev/vdc

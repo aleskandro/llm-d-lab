@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-server-provisioner
+  namespace: nfs-provisioner
+  labels:
+    app: nfs-server-provisioner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-server-provisioner
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-server-provisioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      nodeSelector:
+        benchmark.llm-d.ai/storage: "true"
+      tolerations:
+        - key: benchmark.llm-d.ai/storage
+          effect: NoSchedule
+      containers:
+      - name: nfs-server
+        image: registry.k8s.io/volume-nfs:0.8
+        ports:
+        - name: nfs
+          containerPort: 2049
+        - name: mountd
+          containerPort: 20048
+        - name: rpcbind
+          containerPort: 111
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: nfs-storage
+          mountPath: /exports
+      - name: nfs-provisioner
+        image: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
+        volumeMounts:
+        - name: nfs-storage
+          # This path is constant in the nfs-subdir-external-provisioner code
+          mountPath: /persistentvolumes
+        args:
+          - -v
+          - '4'
+        env:
+        - name: PROVISIONER_NAME
+          value: nfs-provisioner/nfs
+        - name: NFS_SERVER
+          # Must match the clusterIP defined in nfs-server-service.yaml
+          value: "172.30.250.250"
+          # NFS_PATH is used for the volumeSource of the PV. It must match the nfs-server container's path
+        - name: NFS_PATH
+          value: /exports
+        securityContext:
+          runAsUser: 0
+      volumes:
+      - name: nfs-storage
+        persistentVolumeClaim:
+          claimName: nfs-server-storage

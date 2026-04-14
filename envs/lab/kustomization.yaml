@@ -15,6 +15,7 @@ resources:
   - ../../apps/30-local-storage
   - ../../apps/30-lws
   - ../../apps/30-netobserv
+  - ../../apps/30-nfs-server-provisioner
   - ../../apps/30-user-monitoring
   - ../../apps/40-gateway-api
   - ../../apps/50-pipelines
