@@ -8,5 +8,6 @@ resources:
   - task-sleep.yaml
   - task-verify-llm-d.yaml
   - task-collect-logs.yaml
+  - task-download-model.yaml
 
 namespace: pipelines

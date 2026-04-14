@@ -1,0 +1,95 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: download-model
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/displayName: "Download Model from HuggingFace"
+    tekton.dev/tags: model, download, huggingface
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  description: >-
+    Download a model from HuggingFace Hub to a PVC. This task is idempotent -
+    it will skip downloading if the model directory already exists on the PVC.
+
+  params:
+    - name: MODEL_NAME
+      description: HuggingFace model identifier (e.g., meta-llama/Llama-3.1-8B)
+      type: string
+
+    - name: MODEL_REVISION
+      description: Specific model revision/commit to download
+      type: string
+      default: "main"
+
+    - name: SKIP_IF_EXISTS
+      description: Skip download if model directory already exists (idempotency control)
+      type: string
+      default: "true"
+
+    - name: CACHE_DIR
+      description: Base directory on PVC for storing models
+      type: string
+      default: "/models"
+
+  workspaces:
+    - name: models-storage
+      description: PVC for storing downloaded models
+
+  steps:
+    - name: download-model
+      image: python:3.11-slim
+      workingDir: /tmp
+      env:
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: llm-d-hf-token
+              key: HF_TOKEN
+              optional: true
+        - name: HF_HOME
+          value: /tmp/.huggingface
+      script: |
+        #!/bin/bash
+        set -e
+
+        # Sanitize model name: replace / with - for directory path
+        MODEL_DIR_NAME=$(echo "$(params.MODEL_NAME)" | sed 's/\//-/g')
+        MODEL_PATH="$(workspaces.models-storage.path)$(params.CACHE_DIR)/${MODEL_DIR_NAME}"
+
+        echo "Model: $(params.MODEL_NAME)"
+        echo "Revision: $(params.MODEL_REVISION)"
+        echo "Target directory: $MODEL_PATH"
+        echo ""
+
+        if [ "$(params.SKIP_IF_EXISTS)" = "true" ] && [ -d "$MODEL_PATH" ]; then
+          echo "✓ Model already exists at $MODEL_PATH - skipping download"
+          echo "  To force re-download, set SKIP_IF_EXISTS=false"
+          exit 0
+        fi
+
+        echo "Installing Hugging Face CLI..."
+        export HOME=/tmp
+        pip install -q -U --user huggingface_hub
+        export PATH="$HOME/.local/bin:$PATH"
+        echo "✓ HF CLI installed"
+        echo ""
+
+        mkdir -p "$(workspaces.models-storage.path)$(params.CACHE_DIR)"
+
+        echo "Downloading model: $(params.MODEL_NAME)"
+        echo "This may take several minutes for large models..."
+        echo ""
+
+        hf download \
+          "$(params.MODEL_NAME)" \
+          --revision "$(params.MODEL_REVISION)" \
+          --local-dir "$MODEL_PATH"
+
+        echo ""
+        echo "✓ Download complete!"
+        echo "Model stored at: $MODEL_PATH"
+        echo ""
+        echo "Directory contents:"
+        ls -lh "$MODEL_PATH" | head -20
