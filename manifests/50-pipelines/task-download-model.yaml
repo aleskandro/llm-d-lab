@@ -81,12 +81,12 @@ spec:
         echo "Downloading model: $(params.MODEL_NAME)"
         echo "This may take several minutes for large models..."
         echo ""
-
+        set -x
         hf download \
           "$(params.MODEL_NAME)" \
           --revision "$(params.MODEL_REVISION)" \
           --local-dir "$MODEL_PATH"
-
+        set +x
         echo ""
         echo "✓ Download complete!"
         echo "Model stored at: $MODEL_PATH"
