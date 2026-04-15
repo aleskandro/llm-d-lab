@@ -53,9 +53,15 @@ Service (ClusterIP: 172.30.250.250)
 - **SCC**: Requires privileged SecurityContextConstraints (`nfs-server-provisioner-scc`) for OpenShift
 
 ### NFS Server Container
-- **Image**: `registry.k8s.io/volume-nfs:0.8`
-- **Ports**: 2049 (NFS), 20048 (mountd), 111 (rpcbind)
-- **Security**: Runs privileged with `SYS_ADMIN` and `SETPCAP` capabilities
+- **Image**: `docker.io/janeczku/nfs-ganesha:latest`
+- **Type**: NFS-Ganesha user-space NFS server
+- **Ports**: 2049 (NFS), 111 (rpcbind)
+- **Protocol**: NFSv4 with full file locking support
+- **Security**: Runs privileged with `SYS_ADMIN`, `SETPCAP`, `DAC_READ_SEARCH`, `DAC_OVERRIDE` capabilities
+- **Features**:
+  - Full NFSv4 native locking (no NLM needed)
+  - Proper file lock support for Python/HuggingFace downloads
+  - Configurable via ConfigMap (`nfs-ganesha-config`)
 
 ### NFS Provisioner Container
 - **Image**: `registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2`
@@ -67,13 +73,38 @@ Service (ClusterIP: 172.30.250.250)
 - **Provisioner**: `nfs-provisioner/nfs`
 - **Features**: Dynamic provisioning, volume expansion support
 
+## NFS-Ganesha Configuration
+
+The NFS server uses NFS-Ganesha, a user-space NFS server with full NFSv4 support:
+
+- **Configuration**: Via environment variables (no ConfigMap needed)
+- **Protocol**: NFSv4 only (better performance, native locking)
+- **Locking**: Full file locking support via NFSv4 state management
+- **Export**: `/exports` with `no_root_squash` and RW access (`*` access)
+- **Image**: `docker.io/janeczku/nfs-ganesha:latest`
+
+**Environment Variables:**
+- `GANESHA_EXPORT_ID=1`
+- `GANESHA_EXPORT=/exports`
+- `GANESHA_ACCESS=*` (allow all clients)
+- `GANESHA_ROOT_ACCESS=*` (no root squashing)
+- `GANESHA_NFS_PROTOCOLS=4` (NFSv4 only)
+- `GANESHA_TRANSPORTS=TCP`
+
+**Why NFS-Ganesha?**
+- ✅ Proper file locking for Python/HuggingFace downloads
+- ✅ NFSv4 native locking (no separate lock daemons needed)
+- ✅ Better performance than kernel NFS in containers
+- ✅ Dynamic configuration via environment variables
+
 ## OpenShift Security
 
 OpenShift-specific SecurityContextConstraints (SCC):
 
 - **nfs-server-provisioner-scc**: 
-  - Allows privileged containers (for NFS server)
-  - Grants `SYS_ADMIN` and `SETPCAP` capabilities (required for NFS server)
+  - Allows privileged containers (for NFS-Ganesha server)
+  - Grants `SYS_ADMIN`, `SETPCAP`, `DAC_READ_SEARCH`, `DAC_OVERRIDE` capabilities
+  - Required for NFS-Ganesha to manage file access and exports
   - Normal pod networking (no hostNetwork)
   - Bound to `system:serviceaccount:nfs-provisioner:nfs-client-provisioner`
 

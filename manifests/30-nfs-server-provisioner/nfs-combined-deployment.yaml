@@ -25,19 +25,32 @@ spec:
           effect: NoSchedule
       containers:
       - name: nfs-server
-        image: registry.k8s.io/volume-nfs:0.8
+        image: docker.io/janeczku/nfs-ganesha:latest
         ports:
         - name: nfs
           containerPort: 2049
-        - name: mountd
-          containerPort: 20048
         - name: rpcbind
           containerPort: 111
         securityContext:
           privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
+              - DAC_READ_SEARCH
+              - DAC_OVERRIDE
         volumeMounts:
         - name: nfs-storage
-          mountPath: /exports
+          mountPath: /data/nfs
+        readinessProbe:
+          tcpSocket:
+            port: 2049
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 2049
+          initialDelaySeconds: 30
+          periodSeconds: 10
       - name: nfs-provisioner
         image: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
         volumeMounts:
@@ -55,7 +68,7 @@ spec:
           value: "172.30.250.250"
           # NFS_PATH is used for the volumeSource of the PV. It must match the nfs-server container's path
         - name: NFS_PATH
-          value: /exports
+          value: /
         securityContext:
           runAsUser: 0
       volumes:

@@ -11,6 +11,8 @@ allowPrivilegedContainer: true
 allowedCapabilities:
   - SYS_ADMIN
   - SETPCAP
+  - DAC_READ_SEARCH
+  - DAC_OVERRIDE
 defaultAddCapabilities: null
 fsGroup:
   type: RunAsAny
