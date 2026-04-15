@@ -56,11 +56,13 @@ spec:
         set -e
 
         # Sanitize model name: replace / with - for directory path
+        # TODO: Sanitize the path: prune initial `/` and any occurrence of double slash `//`
         MODEL_DIR_NAME=$(echo "$(params.CACHE_DIR)/$(params.MODEL_NAME)" | sed 's/\//--/g')
-        MODEL_PATH="$(workspaces.models-storage.path)${MODEL_DIR_NAME}"
+        MODEL_PATH="$(workspaces.models-storage.path)/${MODEL_DIR_NAME}"
 
         echo "Model: $(params.MODEL_NAME)"
         echo "Revision: $(params.MODEL_REVISION)"
+        echo "Model dir name: $(echo $MODEL_DIR_NAME)"
         echo "Target directory: $MODEL_PATH"
         echo ""
 
