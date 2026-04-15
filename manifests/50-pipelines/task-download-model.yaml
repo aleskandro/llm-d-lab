@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: download-model
+  namespace: experiment-01
   labels:
     app.kubernetes.io/version: "0.1"
   annotations:
@@ -55,8 +56,8 @@ spec:
         set -e
 
         # Sanitize model name: replace / with - for directory path
-        MODEL_DIR_NAME=$(echo "$(params.MODEL_NAME)" | sed 's/\//-/g')
-        MODEL_PATH="$(workspaces.models-storage.path)$(params.CACHE_DIR)/${MODEL_DIR_NAME}"
+        MODEL_DIR_NAME=$(echo "$(params.CACHE_DIR)/$(params.MODEL_NAME)" | sed 's/\//--/g')
+        MODEL_PATH="$(workspaces.models-storage.path)${MODEL_DIR_NAME}"
 
         echo "Model: $(params.MODEL_NAME)"
         echo "Revision: $(params.MODEL_REVISION)"
