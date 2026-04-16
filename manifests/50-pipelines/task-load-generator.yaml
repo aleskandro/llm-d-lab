@@ -151,7 +151,10 @@ spec:
         random_uid=$(cat /proc/sys/kernel/random/uuid)
         base_path="$(params.basepath)"
         base_path="${base_path:-$(context.taskRun.name)}"
-        folder_name="$(workspaces.results.path)/${base_path}/benchmark-${start_time}-$random_uid"
+        if [ -n "$(params.test-name)" ]; then
+          folder_name="$(params.test-name)-"
+        fi
+        folder_name="$(workspaces.results.path)/${base_path}/${folder_name}${start_time}-$random_uid"
         mkdir -p "$folder_name"
         OUTPUT_JSON="${folder_name}/$(params.output-basename).json"
         OUTPUT_LOG="${folder_name}/$(params.output-basename)-log.txt"
