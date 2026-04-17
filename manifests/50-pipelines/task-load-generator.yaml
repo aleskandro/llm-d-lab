@@ -240,7 +240,7 @@ spec:
         echo ""
 
         # Run the benchmark and capture logs
-        eval $CMD 2>&1 | tee "$OUTPUT_LOG"
+        $CMD 2>&1 | tee "$OUTPUT_LOG"
         set +x
         end_time=$(date --iso-8601=seconds --utc)
         
