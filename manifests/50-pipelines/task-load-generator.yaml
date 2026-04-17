@@ -221,7 +221,7 @@ spec:
         fi
 
         # Add output path
-        CMD="$CMD --output-path /tmp/benchmarks.json --disable-progress"
+        CMD="$CMD --output-dir /tmp/ --outputs benchmarks.json --disable-progress"
 
         # Add any additional arguments
         if [ -n "$(params.additional-args)" ]; then
