@@ -232,7 +232,7 @@ spec:
         # Add backend kwargs if specified. Be careful about quoting to ensure the JSON is passed correctly
         set -x
         if [ -n "$(params.backend-kwargs)" ]; then
-            CMD="$CMD --backend-kwargs '$(params.backend-kwargs)'"
+            CMD="$CMD --backend-kwargs $(params.backend-kwargs)"
         fi
         
         echo ""
