@@ -230,15 +230,18 @@ spec:
         fi
 
         # Add backend kwargs if specified. Be careful about quoting to ensure the JSON is passed correctly
+        set -x
         if [ -n "$(params.backend-kwargs)" ]; then
             CMD="$CMD --backend-kwargs '$(params.backend-kwargs)'"
         fi
+        
         echo ""
         echo "Command: $CMD"
         echo ""
 
         # Run the benchmark and capture logs
         eval $CMD 2>&1 | tee "$OUTPUT_LOG"
+        set +x
         end_time=$(date --iso-8601=seconds --utc)
         
         # Copy results to workspace with specified basename
