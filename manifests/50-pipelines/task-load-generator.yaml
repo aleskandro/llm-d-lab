@@ -61,6 +61,10 @@ spec:
       type: string
       description: Additional guidellm arguments (space-separated)
       default: ""
+    - name: backend-kwargs
+      type: string
+      description: Additional backend kwargs in JSON format (e.g., '{"extras":{"headers":{"x-gateway-inference-objective":"pri10"}}}')
+      default: ""
     - name: start-delay
       type: string
       description: Delay before starting the benchmark in seconds
@@ -198,7 +202,9 @@ spec:
         if [ -n "$(params.max-requests)" ]; then
           CMD="$CMD --max-number $(params.max-requests)"
           echo "Max requests: $(params.max-requests)"
-        else
+        fi
+        
+        if [ -n "$(params.max-seconds)" ]; then
           CMD="$CMD --max-seconds $(params.max-seconds)"
           echo "Max duration: $(params.max-seconds) seconds"
         fi
@@ -223,6 +229,10 @@ spec:
           echo "Additional args: $(params.additional-args)"
         fi
 
+        # Add backend kwargs if specified. Be careful about quoting to ensure the JSON is passed correctly
+        if [ -n "$(params.backend-kwargs)" ]; then
+            CMD="$CMD --backend-kwargs '$(params.backend-kwargs)'"
+        fi
         echo ""
         echo "Command: $CMD"
         echo ""
