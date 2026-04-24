@@ -1,0 +1,249 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: flow-control-2-streams
+  namespace: experiment-01
+spec:
+  params:
+    - name: target-url
+      type: string
+      default: "http://infra-inference-scheduling-inference-gateway-openshift-default.experiment-01.svc.cluster.local"
+    - name: model
+      type: string
+      default: Qwen/Qwen3-32B
+    - name: hf-secret-name
+      type: string
+      default: "huggingface-secret"
+    - name: namespace
+      type: string
+      default: "experiment-01"
+    - name: deployment-name
+      type: string
+      default: "ms-inference-scheduling-llm-d-modelservice-decode"
+    - name: reset-llm-d
+      type: string
+      default: "true"
+    - name: epp-config
+      type: string
+      default: ""
+    - name: replicas
+      type: string
+      default: "2"
+    - name: test-name
+      type: string
+      default: "flow-control-disabled"
+    - name: objects-config
+      type: string
+      default: |
+        kind: ConfigMap
+        apiVersion: v1
+        metadata:
+          name: gaie-inference-scheduling-epp
+          namespace: experiment-01
+          labels:
+            app.kubernetes.io/managed-by: Helm
+          annotations:
+            meta.helm.sh/release-name: gaie-inference-scheduling
+            meta.helm.sh/release-namespace: experiment-01
+        data:
+          default-plugins.yaml: |
+            apiVersion: inference.networking.x-k8s.io/v1alpha1
+            kind: EndpointPickerConfig
+            plugins:
+              - type: queue-scorer
+              - type: kv-cache-utilization-scorer
+              - type: prefix-cache-scorer
+            schedulingProfiles:
+              - name: default
+                plugins:
+                  - pluginRef: queue-scorer
+                    weight: 2
+                  - pluginRef: kv-cache-utilization-scorer
+                    weight: 2
+                  - pluginRef: prefix-cache-scorer
+                    weight: 3
+    - name: reset-objects-config
+      type: string
+      default: |
+        kind: ConfigMap
+        apiVersion: v1
+        metadata:
+          name: gaie-inference-scheduling-epp
+          namespace: experiment-01
+          labels:
+            app.kubernetes.io/managed-by: Helm
+          annotations:
+            meta.helm.sh/release-name: gaie-inference-scheduling
+            meta.helm.sh/release-namespace: experiment-01
+        data:
+          default-plugins.yaml: |
+            apiVersion: inference.networking.x-k8s.io/v1alpha1
+            kind: EndpointPickerConfig
+            plugins:
+              - type: queue-scorer
+              - type: kv-cache-utilization-scorer
+              - type: prefix-cache-scorer
+            schedulingProfiles:
+              - name: default
+                plugins:
+                  - pluginRef: queue-scorer
+                    weight: 2
+                  - pluginRef: kv-cache-utilization-scorer
+                    weight: 2
+                  - pluginRef: prefix-cache-scorer
+                    weight: 3
+  workspaces:
+    - name: shared-workspace
+  finally:
+    - name: collect-logs
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: collect-application-logs
+          - name: namespace
+            value: pipelines
+      params:
+        - name: namespace
+          value: $(params.namespace)
+        - name: deployment-name
+          value: $(params.deployment-name)
+      workspaces:
+        - name: results
+          workspace: shared-workspace
+    - name: cleanup
+      when:
+        - input: $(params.reset-llm-d)
+          operator: in
+          values: ["true", "True", "TRUE"]
+      taskSpec:
+        steps:
+          - name: cleanup
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            script: |
+              if [ -n "$(params.reset-objects-config)" ]; then
+                echo "Applying original objects config"
+                echo "$(params.reset-objects-config)" > /tmp/obj.yaml
+                cat /tmp/obj.yaml
+                kubectl apply -n $(params.namespace) -f /tmp/obj.yaml
+              fi
+              kubectl delete inferenceobjective -l benchmark.llm-d.ai/experiment=flow-control-01 -n $(params.namespace) || true
+              kubectl delete pods -l llm-d.ai/guide=inference-scheduling
+              kubectl delete pods -l inference.networking.k8s.io/igw-mode=inferencepool
+              kubectl wait --for=condition=available --timeout=900s deployment/$(params.deployment-name) -n $(params.namespace)
+              echo "Waiting additional 60s for stabilization"
+              sleep 60
+  tasks:
+    - name: prepare-llm-d-conf
+      when:
+        - input: $(params.reset-llm-d)
+          operator: in
+          values: ["true", "True", "TRUE"]
+      taskSpec:
+        steps:
+          - name: prepare-llm-d-conf
+            image: ghcr.io/helmfile/helmfile:v1.2.2
+            script: |
+              if [ -n "$(params.objects-config)" ]; then
+                echo "Applying objects config"
+                echo "$(params.objects-config)" > /tmp/obj.yaml
+                cat /tmp/obj.yaml
+                kubectl apply -n $(params.namespace) -f /tmp/obj.yaml
+              fi
+              kubectl delete pods -l llm-d.ai/guide=inference-scheduling
+              kubectl delete pods -l inference.networking.k8s.io/igw-mode=inferencepool
+              kubectl wait --for=condition=available --timeout=900s deployment/$(params.deployment-name) -n $(params.namespace)
+              echo "Waiting additional 120s for stabilization"
+              sleep 120
+    - name: warmup
+      runAfter:
+        - prepare-llm-d-conf
+      timeout: 30m
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: guidellm-load-generator
+          - name: namespace
+            value: pipelines
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: test-name
+          value: warmup
+        - name: model
+          value: $(params.model)
+        - name: scenario
+          value: |
+            request_format: text_completions
+            profile: concurrent
+            rate: 10
+            max_seconds: 300
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - name: output-basename
+          value: $(params.test-name)
+        - name: hf-secret-name
+          value: $(params.hf-secret-name)
+        - name: basepath
+          value: /workspace/results/$(context.pipelineRun.name)
+      workspaces:
+        - name: results
+          workspace: shared-workspace
+    - name: load-test
+      runAfter:
+        - warmup
+      timeout: 2h
+      matrix:
+        include:
+          - name: "stream-hi-pri"
+            params:
+              - name: backend-kwargs
+                value: |
+                  {\"extras\":{\"headers\":{\"x-gateway-inference-objective\":\"pri10\",\"x-gateway-inference-fairness-id\":\"10\"}}}
+              - name: test-name
+                value: "high-priority"
+          - name: "stream-low-pri"
+            params:
+              - name: backend-kwargs
+                value: |
+                  {\"extras\":{\"headers\":{\"x-gateway-inference-objective\":\"pri1\",\"x-gateway-inference-fairness-id\":\"10\"}}}
+              - name: test-name
+                value: "low-priority"
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: guidellm-load-generator
+          - name: namespace
+            value: pipelines
+      params:
+        - name: target-url
+          value: $(params.target-url)
+        - name: model
+          value: $(params.model)
+        - name: scenario
+          value: |
+            request_format: text_completions
+            profile: concurrent
+            rate: [100, 50, 40, 20, 10, 1]
+            max_seconds: 600
+            data:
+              prompt_tokens: 1024
+              output_tokens: 1024
+        - name: output-basename
+          value: $(params.test-name)
+        - name: hf-secret-name
+          value: $(params.hf-secret-name)
+        - name: basepath
+          value: /workspace/results/$(context.pipelineRun.name)
+      workspaces:
+        - name: results
+          workspace: shared-workspace

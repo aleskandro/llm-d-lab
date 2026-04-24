@@ -1,0 +1,64 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: gaie-inference-scheduling-epp
+  namespace: experiment-01
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: gaie-inference-scheduling
+    meta.helm.sh/release-namespace: experiment-01
+data:
+  default-plugins.yaml: |
+    apiVersion: inference.networking.x-k8s.io/v1alpha1
+    #apiVersion: config.x-k8s.io/v1alpha1
+    kind: EndpointPickerConfig
+    plugins:
+    - type: queue-scorer
+    - type: kv-cache-utilization-scorer
+    - type: prefix-cache-scorer
+    - type: utilization-detector
+      parameters:
+        queueDepthThreshold: 5
+        kvCacheUtilThreshold: 0.8
+    schedulingProfiles:
+    - name: default
+      plugins:
+      - pluginRef: queue-scorer
+        weight: 2
+      - pluginRef: kv-cache-utilization-scorer
+        weight: 2
+      - pluginRef: prefix-cache-scorer
+        weight: 3
+    featureGates:
+      - "flowControl"
+    saturationDetector:
+      pluginRef: utilization-detector
+---
+apiVersion: inference.networking.x-k8s.io/v1alpha2
+kind: InferenceObjective
+metadata:
+  name: pri10
+  namespace: experiment-01
+  labels:
+    benchmark.llm-d.ai/experiment: "flow-control-01"
+spec:
+  priority: 10
+  poolRef:
+    name: gaie-inference-scheduling
+    kind: InferencePool
+    group: inference.networking.k8s.io
+---
+apiVersion: inference.networking.x-k8s.io/v1alpha2
+kind: InferenceObjective
+metadata:
+  name: pri1
+  namespace: experiment-01
+  labels:
+    benchmark.llm-d.ai/experiment: "flow-control-01"
+spec:
+  priority: 1
+  poolRef:
+    name: gaie-inference-scheduling
+    kind: InferencePool
+    group: inference.networking.k8s.io
