@@ -14,12 +14,12 @@
 #   ./fetch-results.sh <pvc-name> <namespace>   # explicit PVC + namespace
 #
 # The script creates:
-#   _out/<pvc-name>/...          (mirror of the PVC contents)
+#   _in/<pvc-name>/...          (mirror of the PVC contents)
 #
 set -euo pipefail
 
 NAMESPACE="${2:-experiment-01}"
-LOCAL_OUT="$(dirname "$0")/_out"
+LOCAL_OUT="$(dirname "$0")/_in"
 HELPER_POD="pvc-reader-$$"
 
 cleanup() {
