@@ -1,0 +1,31 @@
+# Additional CatalogSources (required for pre-release OCP)
+additionalCatalogSources:
+  - name: rhods-fragment-catalog
+    namespace: openshift-marketplace
+    image: quay.io/rhoai/rhoai-fbc-fragment:rhoai-3.4
+    displayName: RHOAI Fragment Catalog
+    publisher: Red Hat
+
+namespace: openshift-marketplace
+
+# Operators to install
+operators:
+  - namespace: redhat-ods-operator
+    channel: stable-3.x
+    installPlanApproval: Automatic
+    name: rhods-operator
+    source: rhods-fragment-catalog
+    sourceNamespace: openshift-marketplace
+    #startingCSV: openshift-gitops-operator.v1.18.1
+
+cliImage: ghcr.io/helmfile/helmfile:v1.2.2
+
+imageDigestMirrorSets:
+  - name: rhoai-registry-redhat-mirror-quay
+    source: registry.redhat.io/rhoai
+    mirrors:
+    - quay.io/rhoai
+  - name: rhaii-registry-redhat-mirror-quay
+    source: registry.redhat.io/rhaii
+    mirrors:
+    - registry.stage.redhat.io/rhaii

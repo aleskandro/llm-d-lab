@@ -1,0 +1,124 @@
+apiVersion: serving.kserve.io/v1alpha2
+kind: LLMInferenceService
+metadata:
+  annotations:
+    security.opendatahub.io/enable-auth: "false"
+    serving.kserve.io/enable-prometheus-scraping: "true"
+  name: llm-inference-service
+  namespace: experiment-01
+spec:
+  model:
+    name: Qwen/Qwen3-32B
+    uri: pvc://model-storage
+  replicas: 2
+  router:
+    gateway: {}
+    route: {}
+    scheduler:
+      template:
+        containers:
+          - args:
+              - --pool-name
+              - '{{ ChildName .ObjectMeta.Name `-inference-pool` }}'
+              - --pool-namespace
+              - '{{ .ObjectMeta.Namespace }}'
+              - --pool-group
+              - inference.networking.x-k8s.io
+              - --zap-encoder
+              - json
+              - --grpc-port
+              - "9002"
+              - --grpc-health-port
+              - "9003"
+              - --secure-serving
+              - --model-server-metrics-scheme
+              - https
+              - --cert-path
+              - /var/run/kserve/tls
+              - --config-text
+              - |
+                apiVersion: inference.networking.x-k8s.io/v1alpha1
+                kind: EndpointPickerConfig
+                plugins:
+                - type: queue-scorer
+                - type: kv-cache-utilization-scorer
+                - type: prefix-cache-scorer
+                - type: round-robin-fairness-policy
+                - type: fcfs-ordering-policy
+                - type: metrics-data-source
+                  parameters:
+                    scheme: "http"
+                    path: "/metrics"
+                    insecureSkipVerify: true
+                - type: model-server-protocol-metrics
+                schedulingProfiles:
+                - name: default
+                  plugins:
+                  - pluginRef: queue-scorer
+                    weight: 5.0
+                  - pluginRef: kv-cache-utilization-scorer
+                    weight: 2.0
+                  - pluginRef: prefix-cache-scorer
+                    weight: 3.0
+                featureGates:
+                  - "flowControl"
+                saturationDetector:
+                  queueDepthThreshold: 3
+                  kvCacheUtilThreshold: 0.8
+                flowControl:
+                    maxBytes: 1073741824
+                    defaultRequestTTL: 30s
+                    priorityBands:
+                    - priority: 1
+                      orderingPolicyRef: fcfs-ordering-policy
+                      fairnessPolicyRef: round-robin-fairness-policy
+                    - priority: 0
+                      orderingPolicyRef: fcfs-ordering-policy
+                      fairnessPolicyRef: round-robin-fairness-policy
+                    - priority: -1
+                      orderingPolicyRef: fcfs-ordering-policy
+                      fairnessPolicyRef: round-robin-fairness-policy
+            name: main
+            resources: {}
+  template:
+    tolerations:
+          - effect: NoSchedule
+            key: benchmark.llm-d.ai/test-gpu-amd64
+            operator: Exists
+    containers:
+      - args:
+          - --port=8000
+          - --host=0.0.0.0
+          - --model=/mnt/models/models--Qwen--Qwen3-32B/
+          - --served-model-name=Qwen/Qwen3-32B
+          - --tensor-parallel-size=2
+          - --enable-ssl-refresh
+          - --ssl-certfile=/var/run/kserve/tls/tls.crt
+          - --ssl-keyfile=/var/run/kserve/tls/tls.key
+          - --gpu-memory-utilization=0.95
+          #- --trust-remote-code
+          #- --no-enable-log-requests
+          #- --enable-prefix-caching
+          #- --max-model-len=40960
+          - --disable-uvicorn-access-log
+          - --max-num-seqs=10
+        command:
+          - python3
+          - -m
+          - vllm.entrypoints.openai.api_server
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTPS
+          initialDelaySeconds: 400
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: main
+        resources:
+          limits:
+            nvidia.com/gpu: "2"
+          requests:
+            nvidia.com/gpu: "2"

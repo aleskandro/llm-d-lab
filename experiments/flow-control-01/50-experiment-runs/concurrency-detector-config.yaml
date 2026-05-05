@@ -1,0 +1,94 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: gaie-inference-scheduling-epp
+  namespace: experiment-01
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: gaie-inference-scheduling
+    meta.helm.sh/release-namespace: experiment-01
+data:
+  default-plugins.yaml: |
+    apiVersion: inference.networking.x-k8s.io/v1alpha1
+    #apiVersion: config.x-k8s.io/v1alpha1
+    kind: EndpointPickerConfig
+    plugins:
+      - type: queue-scorer
+      - type: kv-cache-utilization-scorer
+      - type: prefix-cache-scorer
+      - type: round-robin-fairness-policy
+      - type: fcfs-ordering-policy
+      - type: concurrency-detector
+        parameters:
+          maxConcurrency: 15
+          concurrencyMode: requests
+          headroom: 0.0
+    schedulingProfiles:
+      - name: default
+        plugins:
+          - pluginRef: queue-scorer
+            weight: 2
+          - pluginRef: kv-cache-utilization-scorer
+            weight: 2
+          - pluginRef: prefix-cache-scorer
+            weight: 3
+    featureGates:
+      - "flowControl"
+    saturationDetector:
+      pluginRef: concurrency-detector
+    flowControl:
+      maxBytes: "10Gi"
+      maxRequests: "1k"
+      defaultRequestTTL: "60s"
+      priorityBands:
+        - priority: 10
+          maxRequests: "50"
+          fairnessPolicyRef: round-robin-fairness-policy
+          orderingPolicyRef: fcfs-ordering-policy
+        - priority: 1
+          maxRequests: "10"
+          fairnessPolicyRef: round-robin-fairness-policy
+          orderingPolicyRef: fcfs-ordering-policy
+---
+apiVersion: inference.networking.x-k8s.io/v1alpha2
+kind: InferenceObjective
+metadata:
+  name: premium
+  namespace: experiment-01
+  labels:
+    benchmark.llm-d.ai/experiment: "flow-control-01"
+spec:
+  priority: 1
+  poolRef:
+    name: gaie-inference-scheduling
+    kind: InferencePool
+    group: inference.networking.k8s.io
+---
+apiVersion: inference.networking.x-k8s.io/v1alpha2
+kind: InferenceObjective
+metadata:
+  name: standard
+  namespace: experiment-01
+  labels:
+    benchmark.llm-d.ai/experiment: "flow-control-01"
+spec:
+  priority: 0
+  poolRef:
+    name: gaie-inference-scheduling
+    kind: InferencePool
+    group: inference.networking.k8s.io
+---
+apiVersion: inference.networking.x-k8s.io/v1alpha2
+kind: InferenceObjective
+metadata:
+  name: batch
+  namespace: experiment-01
+  labels:
+    benchmark.llm-d.ai/experiment: "flow-control-01"
+spec:
+  priority: -1
+  poolRef:
+    name: gaie-inference-scheduling
+    kind: InferencePool
+    group: inference.networking.k8s.io

@@ -1,0 +1,123 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: flow-control-2-streams-enabled-
+  namespace: experiment-01
+spec:
+  params:
+    - name: target-url
+      value: "http://infra-inference-scheduling-inference-gateway-openshift-default.experiment-01.svc.cluster.local"
+    - name: test-name
+      value: flow-control-enabled
+    - name: objects-config
+      value: |
+        kind: ConfigMap
+        apiVersion: v1
+        metadata:
+          name: gaie-inference-scheduling-epp
+          namespace: experiment-01
+          labels:
+            app.kubernetes.io/managed-by: Helm
+          annotations:
+            meta.helm.sh/release-name: gaie-inference-scheduling
+            meta.helm.sh/release-namespace: experiment-01
+        data:
+          default-plugins.yaml: |
+            apiVersion: inference.networking.x-k8s.io/v1alpha1
+            #apiVersion: config.x-k8s.io/v1alpha1
+            kind: EndpointPickerConfig
+            plugins:
+            - type: queue-scorer
+            - type: kv-cache-utilization-scorer
+            - type: prefix-cache-scorer
+            - type: round-robin-fairness-policy
+            - type: fcfs-ordering-policy
+            - type: concurrency-detector
+              parameters:
+                maxConcurrency: 15
+                concurrencyMode: requests
+                headroom: 0.0
+            schedulingProfiles:
+            - name: default
+              plugins:
+              - pluginRef: queue-scorer
+                weight: 2
+              - pluginRef: kv-cache-utilization-scorer
+                weight: 2
+              - pluginRef: prefix-cache-scorer
+                weight: 3
+            featureGates:
+              - "flowControl"
+            saturationDetector:
+              pluginRef: concurrency-detector
+            flowControl:
+              maxBytes: "10Gi"
+              maxRequests: "1k"
+              defaultRequestTTL: "60s"
+              priorityBands:
+                - priority: 10
+                  maxRequests: "50"
+                  fairnessPolicyRef: round-robin-fairness-policy
+                  orderingPolicyRef: fcfs-ordering-policy
+                - priority: 1
+                  maxRequests: "10"
+                  fairnessPolicyRef: round-robin-fairness-policy
+                  orderingPolicyRef: fcfs-ordering-policy
+        ---
+        apiVersion: inference.networking.x-k8s.io/v1alpha2
+        kind: InferenceObjective
+        metadata:
+          name: pri10
+          namespace: experiment-01
+          labels:
+            benchmark.llm-d.ai/experiment: "flow-control-01"
+        spec:
+          priority: 10
+          poolRef:
+            name: gaie-inference-scheduling
+            kind: InferencePool
+            group: inference.networking.k8s.io
+        ---
+        apiVersion: inference.networking.x-k8s.io/v1alpha2
+        kind: InferenceObjective
+        metadata:
+          name: pri1
+          namespace: experiment-01
+          labels:
+            benchmark.llm-d.ai/experiment: "flow-control-01"
+        spec:
+          priority: 1
+          poolRef:
+            name: gaie-inference-scheduling
+            kind: InferencePool
+            group: inference.networking.k8s.io
+
+  pipelineRef:
+    name: flow-control-2-streams
+  taskRunTemplate:
+    podTemplate:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+                  - key: benchmark.llm-d.ai/test-cpu-amd64
+                    operator: In
+                    values:
+                      - 'true'
+      tolerations:
+        - key: "benchmark.llm-d.ai/test-cpu-amd64"
+          effect: "NoSchedule"
+    serviceAccountName: pipeline
+  timeouts:
+    finally: 1h0m0s
+    pipeline: 12h0m0s
+    tasks: 4h0m0s
+  workspaces:
+    - name: shared-workspace
+      persistentVolumeClaim:
+        claimName: benchmarks

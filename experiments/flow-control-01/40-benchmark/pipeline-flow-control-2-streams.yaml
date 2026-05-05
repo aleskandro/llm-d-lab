@@ -236,8 +236,9 @@ spec:
             rate: [100, 50, 40, 20, 10, 1]
             max_seconds: 600
             data:
-              prompt_tokens: 1024
-              output_tokens: 1024
+              prompt_tokens: 256
+              output_tokens: 128
+              turns: 3
         - name: output-basename
           value: $(params.test-name)
         - name: hf-secret-name
